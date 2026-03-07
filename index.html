@@ -556,12 +556,22 @@
         }
         window.closeCustomAlert = closeCustomAlert;
 
+        // Función para limpiar completamente el estado local
+        function clearLocalSession() {
+            console.log("Clearing local session state...");
+            currentUser = null;
+            window.currentUser = null;
+            localStorage.removeItem('jr_current_user'); // Por si acaso queda rastro
+            renderLoggedUser();
+        }
+
         async function checkInitialSession() {
             if (!supabaseClient) return;
             console.log("Checking for initial session...");
             const { data: { session }, error } = await supabaseClient.auth.getSession();
             if (error) {
                 console.error("Error getting initial session:", error);
+                clearLocalSession();
                 return;
             }
             if (session) {
@@ -571,6 +581,7 @@
                 await fetchUserProfile(session.user.id);
             } else {
                 console.log("No initial session found.");
+                clearLocalSession();
             }
         }
 
@@ -588,9 +599,7 @@
                     await fetchUserProfile(session.user.id);
                 } else if (event === 'SIGNED_OUT') {
                     console.log("User signed out.");
-                    currentUser = null;
-                    window.currentUser = null;
-                    renderLoggedUser();
+                    clearLocalSession();
                 }
             });
         }
@@ -915,9 +924,7 @@
             if (error) {
                 showCustomAlert("Error al cerrar sesión: " + error.message, "Error");
             } else {
-                currentUser = null;
-                window.currentUser = null;
-                renderLoggedUser();
+                clearLocalSession();
                 closeAccountModal();
             }
         }
@@ -961,8 +968,7 @@
         }
         window.loginAccount = loginAccount;
 
-        function saveCurrentUser() { localStorage.setItem('jr_current_user', JSON.stringify(currentUser)); }
-        function loadCurrentUser() { try { const r = localStorage.getItem('jr_current_user'); if (r) currentUser = JSON.parse(r); } catch (e) { } renderLoggedUser(); }
+        // Removed redundant localStorage functions for currentUser to avoid conflicts with Supabase persistence
 
         // Real OAuth flow with Supabase
         async function oauthMock(provider) {
