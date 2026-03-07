@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+
+# SQLite
+*.sqlite
+*.sqlite3
+*.db
+
+# Editors/IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# MCP Server (External)
+mcp-supabase/
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store

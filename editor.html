@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Editor amigos.sqlite — Preguntas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>body{font-family:'Montserrat',sans-serif;background:#0b1020;color:#fff}</style>
+</head>
+<body class="min-h-screen p-6">
+    <div class="max-w-4xl mx-auto">
+        <div class="flex items-center justify-between mb-6">
+            <h1 class="text-2xl font-black">Editor de <span class="text-pink-400">amigos.sqlite</span></h1>
+            <div class="flex gap-2 items-center">
+                    <label class="text-xs text-gray-300">Fichero SQLite (ruta o nombre):</label>
+                    <input id="file-path-input" type="text" value="amigos.sqlite" class="text-sm text-gray-200 p-2 rounded bg-gray-800" />
+                    <label class="text-xs text-gray-300">Importar .sqlite</label>
+                    <input id="file-input" type="file" accept=".sqlite,.db" class="text-sm text-gray-200" />
+                    <button id="fetch-btn" class="ml-2 bg-cyan-600 px-3 py-2 rounded text-sm font-bold">Cargar</button>
+                    <button id="new-btn" class="ml-2 bg-pink-600 px-3 py-2 rounded text-sm font-bold">Crear nueva DB</button>
+                </div>
+        </div>
+
+        <div class="bg-gray-900 p-4 rounded-lg shadow">
+            <div class="mb-4 flex gap-3">
+                <input id="new-text" placeholder="Nueva pregunta..." class="flex-1 p-3 bg-gray-800 rounded text-white outline-none" />
+                <button id="add-btn" class="bg-green-600 px-4 py-3 rounded font-black">Añadir</button>
+                <button id="download-btn" class="bg-yellow-500 px-4 py-3 rounded font-black">Descargar DB</button>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table id="questions-table" class="w-full text-left table-auto text-sm">
+                    <thead>
+                        <tr class="text-gray-400 uppercase text-xs">
+                            <th class="px-3 py-2">ID</th>
+                            <th class="px-3 py-2">Pregunta</th>
+                            <th class="px-3 py-2">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="questions-tbody"></tbody>
+                </table>
+            </div>
+
+            <div id="status" class="mt-4 text-xs text-gray-300"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sql.js@1.8.0/dist/sql-wasm.js"></script>
+    <script>
+        let SQL, db;
+        const STATUS = document.getElementById('status');
+
+        function setStatus(msg, err=false){ STATUS.textContent = msg; STATUS.style.color = err ? '#fca5a5' : '#94f9ff'; }
+
+        async function initSql(){
+            if (SQL) return SQL;
+            SQL = await initSqlJs({ locateFile: file => 'https://cdn.jsdelivr.net/npm/sql.js@1.8.0/dist/' + file });
+            return SQL;
+        }
+
+        async function createNewDB(){
+            await initSql();
+            db = new SQL.Database();
+            db.run("CREATE TABLE IF NOT EXISTS questions (id INTEGER PRIMARY KEY AUTOINCREMENT, text TEXT);");
+            setStatus('Base nueva creada.');
+            renderRows();
+        }
+
+        async function loadDBFromArrayBuffer(ab){
+            await initSql();
+            try{
+                db = new SQL.Database(new Uint8Array(ab));
+                setStatus('DB cargada desde archivo.');
+                renderRows();
+            }catch(e){ setStatus('Error leyendo DB: '+e, true); }
+        }
+
+        async function tryFetchDefault(){
+            await initSql();
+            try{
+                const fnameInput = document.getElementById('file-path-input');
+                const fname = (fnameInput && fnameInput.value.trim()) ? fnameInput.value.trim() : 'amigos.sqlite';
+                const resp = await fetch(fname);
+                if (!resp.ok) { setStatus(`No se encontró "${fname}", crea una nueva DB o importa una.`); return; }
+                const ab = await resp.arrayBuffer();
+                await loadDBFromArrayBuffer(ab);
+            }catch(e){ setStatus('Fetch falló: '+e, true); }
+        }
+
+        function renderRows(){
+            const tbody = document.getElementById('questions-tbody');
+            tbody.innerHTML = '';
+            if (!db) { setStatus('No hay DB cargada.'); return; }
+            try{
+                const res = db.exec('SELECT id, text FROM questions ORDER BY id DESC;');
+                if (!res || res.length === 0) { setStatus('Sin preguntas. Añade la primera.'); return; }
+                const rows = res[0].values;
+                for (const r of rows){
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="px-3 py-2 align-top text-gray-300">${r[0]}</td>
+                        <td class="px-3 py-2 align-top"><div class="break-words text-sm">${escapeHtml(r[1])}</div></td>
+                        <td class="px-3 py-2 align-top">
+                            <button class="edit-btn bg-blue-600 px-3 py-1 rounded mr-2 text-xs font-bold" data-id="${r[0]}">Editar</button>
+                            <button class="del-btn bg-red-600 px-3 py-1 rounded text-xs font-bold" data-id="${r[0]}">Borrar</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+                setStatus(`${rows.length} preguntas listadas.`);
+                attachRowHandlers();
+            }catch(e){ setStatus('Error renderizando: '+e, true); }
+        }
+
+        function escapeHtml(s){ if (s==null) return ''; return s.replace(/[&<>\"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\\':'&#92;', '"':'&quot;'}[c])); }
+
+        function attachRowHandlers(){
+            document.querySelectorAll('.del-btn').forEach(btn => btn.onclick = async (ev)=>{
+                const id = ev.target.dataset.id;
+                if (!confirm('Borrar pregunta ID '+id+' ?')) return;
+                db.run('DELETE FROM questions WHERE id = $id', { $id: id });
+                renderRows();
+            });
+
+            document.querySelectorAll('.edit-btn').forEach(btn => btn.onclick = async (ev)=>{
+                const id = ev.target.dataset.id;
+                const cur = db.exec('SELECT text FROM questions WHERE id = $id', { $id: id });
+                const curText = (cur && cur[0] && cur[0].values[0] && cur[0].values[0][0]) || '';
+                const newText = prompt('Editar pregunta (ID '+id+'):', curText);
+                if (newText === null) return;
+                db.run('UPDATE questions SET text = $text WHERE id = $id', { $text: newText, $id: id });
+                renderRows();
+            });
+        }
+
+        document.getElementById('add-btn').onclick = ()=>{
+            const txt = document.getElementById('new-text').value.trim();
+            if (!txt) return alert('Introduce texto.');
+            if (!db) return alert('Carga o crea primero la DB.');
+            const stmt = db.prepare('INSERT INTO questions (text) VALUES ($text)');
+            stmt.run({ $text: txt });
+            stmt.free();
+            document.getElementById('new-text').value = '';
+            renderRows();
+        };
+
+        document.getElementById('download-btn').onclick = ()=>{
+            if (!db) return alert('No hay DB.');
+            const fnameInput = document.getElementById('file-path-input');
+            let fname = (fnameInput && fnameInput.value.trim()) ? fnameInput.value.trim() : 'amigos.sqlite';
+            // ensure extension
+            if (!/\.sqlite$|\.db$/i.test(fname)) fname = fname + '.sqlite';
+            const data = db.export();
+            const blob = new Blob([data], {type: 'application/octet-stream'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = fname;
+            document.body.appendChild(a); a.click(); a.remove();
+            URL.revokeObjectURL(url);
+            setStatus('Archivo preparado para descargar: '+fname);
+        };
+
+        document.getElementById('file-input').addEventListener('change', async (ev)=>{
+            const f = ev.target.files[0];
+            if (!f) return;
+            const ab = await f.arrayBuffer();
+            await loadDBFromArrayBuffer(ab);
+        });
+
+        document.getElementById('fetch-btn').addEventListener('click', tryFetchDefault);
+        document.getElementById('new-btn').addEventListener('click', createNewDB);
+
+        // Auto-init: intentar cargar el fichero indicado o crear DB nueva
+        (async ()=>{
+            await initSql();
+            try{
+                await tryFetchDefault();
+            }catch(e){
+                await createNewDB();
+            }
+            // si no hay DB cargada, asegurar una en memoria
+            if (!db) await createNewDB();
+        })();
+    </script>
+</body>
+</html>

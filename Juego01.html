@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Party Roulette - El Juego de Beber</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Montserrat:wght@400;700;900&display=swap"
+        rel="stylesheet">
+    <link rel="icon" type="image/png" href="favicon.png">
+    <style>
+        :root {
+            --neon-pink: #ff00ff;
+            --neon-blue: #00f2ff;
+            --neon-yellow: #fefe00;
+        }
+
+        body {
+            background-color: #0d0d0d;
+            color: white;
+            font-family: 'Montserrat', sans-serif;
+            overflow-x: hidden;
+        }
+
+        .font-logo {
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        /* Parpadeo leve: entre 100% y 90% de brillo */
+        .title-flicker {
+            animation: lightPulse 1.2s ease-in-out infinite alternate;
+        }
+
+        @keyframes lightPulse {
+            from {
+                filter: brightness(1);
+            }
+
+            to {
+                filter: brightness(0.9);
+            }
+        }
+
+        .bg-gradient-party {
+            background: radial-gradient(circle at top right, #2d0b2d, #0d0d0d),
+                linear-gradient(135deg, #0d0d0d 0%, #16213e 100%);
+        }
+
+        .timer-circle {
+            transition: stroke-dashoffset 0.1s linear;
+        }
+
+        .card-enter {
+            animation: slideIn 0.5s ease-out forwards;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(30px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .btn-action {
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .btn-action:active {
+            transform: scale(0.92);
+        }
+
+        .glass-panel {
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(12px);
+            border: 2px solid rgba(236, 72, 153, 0.4);
+            box-shadow: 0 0 30px rgba(236, 72, 153, 0.15);
+        }
+
+        .animate-shake {
+            animation: shake 0.5s cubic-bezier(.36, .07, .19, .97) both;
+        }
+
+        @keyframes shake {
+
+            10%,
+            90% {
+                transform: translate3d(-1px, 0, 0);
+            }
+
+            20%,
+            80% {
+                transform: translate3d(2px, 0, 0);
+            }
+
+            30%,
+            50%,
+            70% {
+                transform: translate3d(-4px, 0, 0);
+            }
+
+            40%,
+            60% {
+                transform: translate3d(4px, 0, 0);
+            }
+        }
+
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1em;
+        }
+
+        .player-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-remove {
+            color: #ef4444;
+            padding: 8px;
+            font-weight: 900;
+            transition: all 0.2s;
+        }
+
+        .btn-remove:hover {
+            color: white;
+            background: #ef4444;
+            border-radius: 8px;
+        }
+
+        /* Prominent Alert Glow */
+        #custom-alert-modal .glass-panel {
+            box-shadow: 0 0 50px rgba(236, 72, 153, 0.4), 0 0 100px rgba(236, 72, 153, 0.1);
+            border-top: 6px solid #ff00ff;
+        }
+
+        .animate-bounce-short {
+            animation: bounce-short 0.5s ease-out;
+        }
+
+        @keyframes bounce-short {
+            0% {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+
+            70% {
+                transform: scale(1.05);
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-gradient-party min-h-screen flex items-center justify-center p-4">
+
+    <!-- Pantalla de Configuración Inicial -->
+    <div id="setup-screen" class="w-full max-w-md p-6 sm:p-8 rounded-3xl glass-panel">
+        <h1
+            class="text-4xl sm:text-5xl text-center font-logo title-flicker text-pink-500 mb-8 tracking-widest uppercase italic transform -rotate-2">
+            PARTY ROULETTE</h1>
+        <div class="flex justify-between items-center mb-4">
+            <div>
+                <button onclick="openAccountModal()"
+                    class="text-xs text-cyan-300 hover:text-white transition uppercase font-black tracking-widest bg-black/30 px-3 py-2 rounded-lg border border-white/10">Cuenta</button>
+            </div>
+            <div id="logged-user-display" class="text-xs text-gray-300 font-black flex flex-col items-end">
+                <span>No conectado</span>
+                <div id="user-games" class="text-pink-400 text-[10px] hidden font-black mt-1">0 PARTIDAS DISPONIBLES
+                </div>
+            </div>
+        </div>
+
+        <div class="space-y-6">
+            <div>
+                <label class="block text-xs font-black text-cyan-400 mb-2 uppercase tracking-[0.2em]">Tipo de
+                    Juego</label>
+                <select id="game-mode"
+                    class="w-full bg-gray-900 border-b-2 border-cyan-500 p-3 rounded-t text-white outline-none focus:bg-gray-800 transition cursor-pointer font-bold">
+                    <option value="amigos">Amigos</option>
+                    <option value="conociendonos">Conociéndonos</option>
+                    <option value="picante">Picante</option>
+                    <option value="pareja">Pareja</option>
+                    <option value="extremo">Extremo</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-black text-cyan-400 mb-2 uppercase tracking-[0.2em]">¿Cómo se llama el
+                    castigo?</label>
+                <input type="text" id="penalty-name" placeholder="Ej: Chupito, prenda, 20 sentadillas..."
+                    class="w-full bg-gray-900 border-b-2 border-cyan-500 p-3 rounded-t text-white outline-none focus:bg-gray-800 transition font-bold">
+            </div>
+
+            <div>
+                <label class="block text-xs font-black text-cyan-400 mb-2 uppercase tracking-[0.2em]">Jugadores</label>
+                <div id="players-list" class="space-y-2 mb-3 pr-2">
+                    <div class="player-row flex items-center gap-2" data-gender="">
+                        <input type="text"
+                            class="player-input w-full bg-gray-900 border-l-4 border-pink-500 p-2 rounded text-white outline-none font-bold"
+                            placeholder="Jugador 1">
+                        <div class="flex gap-1">
+                            <button onclick="selectGender(this, 'M')"
+                                class="gender-btn flex-shrink-0 w-10 h-10 rounded-full bg-gray-800 border-2 border-gray-600 flex items-center justify-center text-xl font-bold transition-all text-gray-500 hover:text-gray-300">♂</button>
+                            <button onclick="selectGender(this, 'F')"
+                                class="gender-btn flex-shrink-0 w-10 h-10 rounded-full bg-gray-800 border-2 border-gray-600 flex items-center justify-center text-xl font-bold transition-all text-gray-500 hover:text-gray-300">♀</button>
+                        </div>
+                    </div>
+                    <div class="player-row flex items-center gap-2" data-gender="">
+                        <input type="text"
+                            class="player-input w-full bg-gray-900 border-l-4 border-pink-500 p-2 rounded text-white outline-none font-bold"
+                            placeholder="Jugador 2">
+                        <div class="flex gap-1">
+                            <button onclick="selectGender(this, 'M')"
+                                class="gender-btn flex-shrink-0 w-10 h-10 rounded-full bg-gray-800 border-2 border-gray-600 flex items-center justify-center text-xl font-bold transition-all text-gray-500 hover:text-gray-300">♂</button>
+                            <button onclick="selectGender(this, 'F')"
+                                class="gender-btn flex-shrink-0 w-10 h-10 rounded-full bg-gray-800 border-2 border-gray-600 flex items-center justify-center text-xl font-bold transition-all text-gray-500 hover:text-gray-300">♀</button>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="addPlayerInput()"
+                    class="text-[10px] text-cyan-300 hover:text-white transition uppercase font-black tracking-widest">+
+                    Añadir otro jugador</button>
+            </div>
+
+            <button onclick="startButtonClicked()" id="start-btn"
+                class="w-full py-4 bg-pink-600 hover:bg-pink-500 text-white font-black rounded-xl shadow-[0_0_20px_rgba(236,72,153,0.4)] transition-all transform hover:scale-105 uppercase tracking-widest">
+                ¡Empezar Partida!
+            </button>
+        </div>
+    </div>
+
+    <!-- Pantalla de Juego -->
+    <div id="game-screen" class="hidden w-full max-w-2xl text-center">
+        <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6 px-4">
+            <div class="flex gap-2">
+                <div class="bg-black/60 px-4 py-2 rounded-xl border border-cyan-500 w-fit">
+                    <span class="text-cyan-400 text-[10px] font-black uppercase tracking-widest">Ronda</span>
+                    <span id="round-counter" class="ml-2 text-lg font-bold">1 / 20</span>
+                </div>
+                <div class="bg-pink-500/20 px-4 py-2 rounded-xl border border-pink-500 w-fit hidden sm:block">
+                    <span id="display-mode"
+                        class="text-pink-500 text-[10px] font-black uppercase tracking-widest">AMIGOS</span>
+                </div>
+            </div>
+
+            <div id="current-player-display" class="flex flex-col items-center sm:items-end order-first sm:order-none">
+                <span id="player-name-tag"
+                    class="text-white font-black text-xl uppercase tracking-tighter italic">Cargando...</span>
+                <span id="player-score-tag"
+                    class="mt-1 bg-pink-600 text-white px-3 py-1 rounded-lg text-xs font-black tracking-widest shadow-lg shadow-pink-900/50">0
+                    PUNTOS</span>
+            </div>
+
+            <button onclick="confirmExit()"
+                class="text-gray-400 hover:text-red-500 transition-all flex items-center gap-2 text-[10px] uppercase font-black tracking-widest bg-black/40 px-4 py-2 rounded-xl border border-white/10 hover:border-red-500">
+                Salir ✕
+            </button>
+        </div>
+
+        <div class="relative glass-panel rounded-[2rem] p-6 sm:p-12 card-enter overflow-hidden">
+            <div id="timer-container" class="absolute top-4 right-4 w-12 h-12 sm:w-16 sm:h-16">
+                <svg class="w-full h-full transform -rotate-90">
+                    <circle id="timer-bg-circle" cx="32" cy="32" r="28" stroke="rgba(255,255,255,0.05)" stroke-width="6"
+                        fill="transparent" />
+                    <circle id="timer-bar" cx="32" cy="32" r="28" stroke="#fefe00" stroke-width="6" fill="transparent"
+                        stroke-dasharray="175.9" stroke-dashoffset="0" stroke-linecap="round" class="timer-circle" />
+                </svg>
+                <div id="timer-text"
+                    class="absolute inset-0 flex items-center justify-center font-black text-yellow-400 text-sm">30
+                </div>
+            </div>
+
+            <h2 id="question-text"
+                class="text-2xl sm:text-3xl md:text-4xl font-black leading-tight mb-10 min-h-[140px] sm:min-h-[160px] flex items-center justify-center px-4 uppercase tracking-tighter">
+                ¿Preparados para la primera pregunta?
+            </h2>
+
+            <div id="game-actions" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <button id="btn-contestó" onclick="handleResponse('contestó')"
+                    class="btn-action bg-cyan-600 hover:bg-cyan-500 py-5 sm:py-7 rounded-2xl font-black text-lg sm:text-xl shadow-[0_10px_0_rgb(8,145,178)] hover:translate-y-[-2px] hover:shadow-[0_12px_0_rgb(8,145,178)] active:translate-y-[8px] active:shadow-none transition-all uppercase tracking-widest">
+                    ¡Contestó!
+                </button>
+                <button id="btn-reto" onclick="handleResponse('reto')"
+                    class="btn-action bg-pink-600 hover:bg-pink-500 py-5 sm:py-7 rounded-2xl font-black text-lg sm:text-xl shadow-[0_10px_0_rgb(190,24,93)] hover:translate-y-[-2px] hover:shadow-[0_12px_0_rgb(190,24,93)] active:translate-y-[8px] active:shadow-none transition-all uppercase tracking-widest">
+                    <span class="penalty-label">Reto</span>
+                </button>
+            </div>
+
+            <div id="next-action-container" class="hidden mt-4">
+                <button onclick="nextTurn()"
+                    class="w-full py-6 bg-cyan-600 hover:bg-cyan-500 text-white font-black text-xl rounded-2xl shadow-[0_10px_0_rgb(8,145,178)] hover:translate-y-[-2px] active:translate-y-[8px] active:shadow-none transition-all uppercase tracking-[0.2em]">
+                    Siguiente →
+                </button>
+            </div>
+        </div>
+
+        <div id="status-message"
+            class="mt-8 h-8 text-cyan-400 font-black tracking-widest animate-pulse text-xs sm:text-sm uppercase"></div>
+    </div>
+
+    <!-- Pantalla Final -->
+    <div id="end-screen" class="hidden text-center card-enter p-4 w-full max-w-md">
+        <h1 class="text-5xl sm:text-6xl font-logo text-yellow-400 mb-6 uppercase italic transform -rotate-1">RESULTADOS
+        </h1>
+        <div id="scoreboard-final" class="glass-panel rounded-3xl p-6 mb-8 text-left space-y-3"></div>
+        <button onclick="resetToSetup()"
+            class="px-10 py-5 bg-pink-600 hover:bg-pink-500 rounded-2xl font-black uppercase tracking-widest transition shadow-lg shadow-pink-900/40">
+            Nueva Partida
+        </button>
+    </div>
+
+    <!-- Modal de Confirmación -->
+    <div id="exit-modal"
+        class="hidden fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="glass-panel p-10 rounded-[2.5rem] max-w-xs w-full text-center">
+            <h3 class="text-3xl font-black mb-4 uppercase italic">¿SALIR?</h3>
+            <p class="text-gray-400 mb-8 text-xs font-bold uppercase tracking-widest">Perderás todos los puntos de esta
+                ronda.</p>
+            <div class="flex flex-col gap-4">
+                <button onclick="resetToSetup()"
+                    class="bg-red-600 py-4 rounded-xl font-black uppercase tracking-widest text-sm shadow-[0_6px_0_rgb(153,27,27)]">Abandonar</button>
+                <button onclick="closeExitModal()"
+                    class="bg-gray-800 py-4 rounded-xl font-black uppercase tracking-widest text-sm text-gray-400 border border-white/10">Continuar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Cuentas -->
+    <div id="account-modal"
+        class="hidden fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="glass-panel p-6 sm:p-8 rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+
+            <!-- CONTENEDOR NO AUTENTICADO (Login/Registro) -->
+            <div id="auth-section">
+                <h3 class="text-2xl font-black mb-2 uppercase">Gestionar Cuenta</h3>
+                <div id="accounts-list" class="mb-4 max-h-40 overflow-y-auto text-sm space-y-2"></div>
+
+                <div class="mb-4">
+                    <h4 class="text-sm font-black uppercase text-cyan-300 mb-2">Iniciar sesión</h4>
+                    <div class="space-y-2">
+                        <input id="login-email" type="email" placeholder="Correo"
+                            class="w-full bg-gray-900 p-2 rounded text-white outline-none" />
+                        <input id="login-password" type="password" placeholder="Contraseña"
+                            class="w-full bg-gray-900 p-2 rounded text-white outline-none" />
+                        <div class="flex gap-2">
+                            <button onclick="loginAccount()"
+                                class="flex-1 bg-cyan-600 hover:bg-cyan-500 active:scale-95 transition-all py-2 rounded-xl font-black uppercase">Entrar</button>
+                            <button onclick="oauthMock('google')"
+                                class="flex-1 bg-white/5 py-2 rounded-xl font-black">Google</button>
+                            <button onclick="oauthMock('facebook')"
+                                class="flex-1 bg-white/5 py-2 rounded-xl font-black">Facebook</button>
+                        </div>
+                    </div>
+                </div>
+
+                <h4 class="text-sm font-black uppercase text-cyan-300 mb-2">Crear nueva cuenta</h4>
+                <div class="space-y-2 mb-4">
+                    <input id="acct-name" type="text" placeholder="Nombre"
+                        class="w-full bg-gray-900 p-2 rounded text-white outline-none" />
+                    <input id="acct-email" type="email" placeholder="Correo"
+                        class="w-full bg-gray-900 p-2 rounded text-white outline-none" />
+                    <input id="acct-password" type="password" placeholder="Contraseña"
+                        class="w-full bg-gray-900 p-2 rounded text-white outline-none" />
+                    <input id="acct-birth" type="date" placeholder="Fecha de nacimiento"
+                        class="w-full bg-gray-900 p-2 rounded text-white outline-none" />
+                    <label class="flex items-center gap-2 text-xs"><input id="acct-terms" type="checkbox" /> Acepto
+                        términos
+                        y condiciones</label>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="registerAccount()"
+                        class="flex-1 bg-pink-600 hover:bg-pink-500 py-2 rounded-xl font-black uppercase transition-all">Registrar</button>
+                    <button onclick="closeAccountModal()"
+                        class="flex-1 bg-gray-800 hover:bg-gray-700 py-2 rounded-xl font-black transition-all">Cancelar</button>
+                </div>
+            </div>
+
+            <!-- CONTENEDOR AUTENTICADO (Perfil, Tienda, Compartir) -->
+            <div id="profile-section" class="hidden">
+                <div class="flex justify-between items-start mb-6">
+                    <div>
+                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Conectado como</p>
+                        <p id="profile-name-display"
+                            class="text-2xl font-black text-cyan-400 uppercase tracking-tighter">Cargando...</p>
+                    </div>
+                    <button onclick="closeAccountModal()"
+                        class="text-gray-400 hover:text-white transition-all w-8 h-8 flex items-center justify-center bg-white/5 rounded-full hover:bg-red-500">✕</button>
+                </div>
+
+                <!-- Bloque: Partidas y Tienda -->
+                <div
+                    class="bg-gradient-to-br from-white/10 to-transparent border border-white/10 p-5 rounded-3xl mb-4 text-center relative overflow-hidden">
+                    <div class="absolute -top-10 -right-10 w-32 h-32 bg-pink-500/20 rounded-full blur-3xl"></div>
+                    <p class="text-[10px] font-black text-pink-500 uppercase tracking-[0.3em] mb-2">Tu Saldo Actual</p>
+                    <div class="flex items-baseline justify-center gap-2 mb-6">
+                        <span id="profile-games-display"
+                            class="text-6xl font-logo text-yellow-400 tracking-tighter drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]">0</span>
+                        <span class="text-sm font-black text-gray-300 uppercase tracking-widest">Partidas</span>
+                    </div>
+
+                    <!-- Precios Tienda -->
+                    <h4 class="text-xs font-black uppercase text-cyan-300 tracking-[0.2em] mb-3 text-left">Tienda de
+                        Partidas</h4>
+                    <div class="grid grid-cols-3 gap-3">
+                        <button onclick="buyGames(1, 1.00)"
+                            class="bg-black/50 hover:bg-pink-600 border border-white/10 hover:border-pink-500 rounded-2xl p-3 transition-all group shadow-lg">
+                            <span class="block text-2xl font-black text-white group-hover:text-white mb-1">+1</span>
+                            <span
+                                class="block text-[10px] text-gray-400 font-bold uppercase group-hover:text-white">1.00€</span>
+                        </button>
+                        <button onclick="buyGames(3, 2.50)"
+                            class="bg-black/50 hover:bg-pink-600 border border-white/10 hover:border-pink-500 rounded-2xl p-3 transition-all group shadow-lg ring-1 ring-cyan-500/50">
+                            <span
+                                class="block text-xs font-bold text-cyan-400 group-hover:text-white mb-1 uppercase tracking-widest">Ahorro</span>
+                            <span class="block text-2xl font-black text-white group-hover:text-white mb-1">+3</span>
+                            <span
+                                class="block text-[10px] text-gray-400 font-bold uppercase group-hover:text-white">2.50€</span>
+                        </button>
+                        <button onclick="buyGames(10, 7.00)"
+                            class="bg-black/50 hover:bg-pink-600 border border-white/10 hover:border-pink-500 rounded-2xl p-3 transition-all group shadow-lg">
+                            <span class="block text-2xl font-black text-white group-hover:text-white mb-1">+10</span>
+                            <span
+                                class="block text-[10px] text-gray-400 font-bold uppercase group-hover:text-white">7.00€</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Bloque: Invitar -->
+                <div class="bg-white/5 border border-white/10 p-5 rounded-3xl mb-6 text-center shadow-inner">
+                    <p
+                        class="text-xs font-black text-white uppercase tracking-[0.2em] mb-2 flex items-center justify-center gap-2">
+                        <span>🎁</span> Partida Gratis
+                    </p>
+                    <p class="text-[10px] text-gray-400 font-bold uppercase mb-4 tracking-widest">Invita a un amigo y
+                        gana <span class="text-yellow-400">+1 partida</span></p>
+                    <div class="flex gap-2">
+                        <input type="email" id="share-email-input" placeholder="Correo de un amigo"
+                            class="flex-1 bg-black/50 px-4 py-3 rounded-xl text-white outline-none text-xs font-bold border border-white/10 focus:border-cyan-500 transition-colors">
+                        <button onclick="shareInvite()"
+                            class="bg-cyan-600 hover:bg-cyan-500 active:scale-95 transition-all text-white font-black uppercase text-[10px] tracking-widest px-4 py-3 rounded-xl shadow-[0_0_15px_rgba(8,145,178,0.3)]">Compartir</button>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <button onclick="logoutAccount()"
+                    class="w-full bg-transparent text-red-500 hover:bg-red-600 hover:text-white border border-red-500/30 py-4 rounded-2xl font-black uppercase transition-all tracking-[0.2em] text-sm">Cerrar
+                    Sesión</button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Custom Alert Modal -->
+    <div id="custom-alert-modal"
+        class="hidden fixed inset-0 bg-black/95 backdrop-blur-xl z-[9999] flex items-center justify-center p-4">
+        <div
+            class="glass-panel p-10 rounded-[2.5rem] max-w-sm w-full text-center border-2 border-pink-500/30 animate-bounce-short">
+            <div class="mb-6 flex justify-center">
+                <div
+                    class="w-16 h-16 bg-pink-500/20 rounded-full flex items-center justify-center border-2 border-pink-500 shadow-[0_0_20px_rgba(236,72,153,0.5)]">
+                    <span class="text-3xl text-pink-500">!</span>
+                </div>
+            </div>
+            <h3 id="custom-alert-title"
+                class="text-2xl font-black mb-3 text-pink-500 uppercase tracking-[0.2em] italic">
+                ATENCIÓN</h3>
+            <p id="custom-alert-message"
+                class="text-white text-base font-bold mb-8 leading-relaxed uppercase tracking-tighter">Mensaje de alerta
+            </p>
+            <button onclick="closeCustomAlert()"
+                class="w-full bg-pink-600 hover:bg-pink-500 active:scale-95 transition-all py-4 rounded-2xl font-black uppercase tracking-widest shadow-[0_0_20px_rgba(236,72,153,0.3)]">OK</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+    <script>
+        // --- Supabase Config ---
+        const SUPABASE_URL = 'https://zqjvhemwjdqjxecemnwh.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_4-Se2F_XjCyQ8QdS0HN84w_Wb0ddQ5f';
+        let supabaseClient; // Renombrado para evitar conflictos con la librería global
+        let currentUser = null;
+
+        // Función segura de inicialización
+        function initSupabase() {
+            console.log("Attempting to initialize Supabase...");
+            try {
+                if (window.supabase) {
+                    const { createClient } = window.supabase;
+                    supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                    window.supabaseClient = supabaseClient; // Expose for debugging
+                    console.log("Supabase initialized successfully.");
+                    setupAuthListener();
+                    checkInitialSession();
+                } else {
+                    console.warn("Supabase library not yet available.");
+                }
+            } catch (e) {
+                console.error("Error initializing Supabase:", e);
+            }
+        }
+        window.initSupabase = initSupabase;
+
+        // Custom Alert Logic
+        function showCustomAlert(message, title = null) {
+            const modal = document.getElementById('custom-alert-modal');
+            const titleEl = document.getElementById('custom-alert-title');
+            document.getElementById('custom-alert-message').textContent = message;
+
+            if (title) {
+                titleEl.textContent = title;
+                titleEl.classList.remove('hidden');
+            } else {
+                titleEl.classList.add('hidden');
+            }
+
+            modal.classList.remove('hidden');
+        }
+        window.showCustomAlert = showCustomAlert;
+
+        function closeCustomAlert() {
+            document.getElementById('custom-alert-modal').classList.add('hidden');
+        }
+        window.closeCustomAlert = closeCustomAlert;
+
+        async function checkInitialSession() {
+            if (!supabaseClient) return;
+            console.log("Checking for initial session...");
+            const { data: { session }, error } = await supabaseClient.auth.getSession();
+            if (error) {
+                console.error("Error getting initial session:", error);
+                return;
+            }
+            if (session) {
+                console.log("Initial session found:", session.user.email);
+                currentUser = { id: session.user.id };
+                window.currentUser = currentUser;
+                await fetchUserProfile(session.user.id);
+            } else {
+                console.log("No initial session found.");
+            }
+        }
+
+        function setupAuthListener() {
+            if (!supabaseClient) {
+                console.error("Cannot setup auth listener: supabaseClient is null");
+                return;
+            }
+            supabaseClient.auth.onAuthStateChange(async (event, session) => {
+                console.log("Auth event received:", event, session ? "Session present" : "No session");
+                if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'USER_UPDATED') && session) {
+                    console.log("User is logged in:", session.user.id);
+                    currentUser = { id: session.user.id };
+                    window.currentUser = currentUser;
+                    await fetchUserProfile(session.user.id);
+                } else if (event === 'SIGNED_OUT') {
+                    console.log("User signed out.");
+                    currentUser = null;
+                    window.currentUser = null;
+                    renderLoggedUser();
+                }
+            });
+        }
+
+        // Preguntas semilla (se usan para poblar la base SQLite la primera vez)
+        const SEED_QUESTIONS = [
+            "¿Quién es la persona más sexy de esta habitación?",
+            "¿Qué es lo más vergonzoso que has hecho estando borracho/a?",
+            "Si tuvieras que besar a alguien de aquí para salvar tu vida, ¿a quién elegirías?",
+            "¿Cuál es el secreto que nunca le has contado a tus padres?",
+            "¿Qué es lo más atrae de la persona de tu derecha?",
+            "¿Has mentido alguna vez en este juego hoy?",
+            "¿Cuál ha sido tu peor cita de la historia?",
+            "¿Qué es lo más raro que has buscado en Google?",
+            "¿Quién crees que tiene los peores gustos musicales?",
+            "¿Alguna vez has enviado un mensaje por error?",
+            "¿Cuál es tu mayor placer culposo?",
+            "¿A quién le confiarías tu contraseña del móvil?",
+            "¿Cuál es la mentira más grande que has dicho para ligar?",
+            "¿Con quién del grupo cambiarías de vida?",
+            "¿Cuál es el mensaje más atrevido que has enviado?",
+            "¿Cuál es tu opinión impopular más fuerte?",
+            "¿Qué harías si fueras del sexo opuesto por un día?",
+            "¿Has tenido un 'crush' con un profesor o jefe?",
+            "¿Qué es lo más infantil que sigues haciendo?",
+            "¿Cuál es el sitio más extraño donde has dormido?"
+        ];
+
+        // Preguntas que realmente usará la partida (se cargan desde SQLite)
+        let questions = [];
+
+        // --- SQLite (sql.js) setup ---
+        let SQL;
+        let db;
+        const DB_KEY = 'jr_db_v1';
+
+        async function initDatabase() {
+            // Now questions are fetched from Supabase
+            console.log("Using Supabase for data.");
+        }
+
+        function saveDatabase() {
+            const data = db.export();
+            let binary = '';
+            for (let i = 0; i < data.length; i++) binary += String.fromCharCode(data[i]);
+            const b64 = btoa(binary);
+            localStorage.setItem(DB_KEY, b64);
+        }
+
+        async function loadRandomQuestionsFromDB(category, limit = 50) {
+            if (!supabaseClient) {
+                console.warn("supabaseClient not initialized. Using seed questions.");
+                return [];
+            }
+            const { data, error } = await supabaseClient
+                .from('questions')
+                .select('text, gender')
+                .eq('category', category)
+                .limit(limit);
+
+            if (error) {
+                console.error("Error fetching questions:", error);
+                return [];
+            }
+            // Retornamos el objeto completo para tener el género
+            return data;
+        }
+
+        // --- Accounts DB reading (read-only) ---
+        async function loadAccountsSqlite() {
+            try {
+                if (!SQL) SQL = await initSqlJs({ locateFile: file => 'https://cdn.jsdelivr.net/npm/sql.js@1.8.0/dist/' + file });
+                const resp = await fetch('accounts.sqlite');
+                if (!resp.ok) return [];
+                const ab = await resp.arrayBuffer();
+                const accountsDb = new SQL.Database(new Uint8Array(ab));
+                const res = accountsDb.exec('SELECT id, name, email, registered_at, birth_date, accepted_terms FROM accounts ORDER BY registered_at DESC;');
+                if (!res || res.length === 0) return [];
+                return res[0].values.map(r => ({ id: r[0], name: r[1], email: r[2], registered_at: r[3], birth_date: r[4], accepted_terms: !!r[5] }));
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function getLocalAccounts() {
+            try {
+                const raw = localStorage.getItem('jr_local_accounts');
+                if (!raw) return [];
+                return JSON.parse(raw);
+            } catch (e) { return []; }
+        }
+
+        function saveLocalAccounts(list) {
+            localStorage.setItem('jr_local_accounts', JSON.stringify(list));
+        }
+
+        async function openAccountModal() {
+            console.log("Opening account modal...");
+            const modal = document.getElementById('account-modal');
+            if (!modal) {
+                console.error("Modal 'account-modal' not found in DOM");
+                return;
+            }
+            modal.classList.remove('hidden');
+
+            const listEl = document.getElementById('accounts-list');
+            if (listEl) {
+                listEl.innerHTML = 'Cargando...';
+                try {
+                    const fromFile = await loadAccountsSqlite();
+                    const local = getLocalAccounts();
+                    listEl.innerHTML = '';
+                    if (fromFile && fromFile.length > 0) {
+                        fromFile.forEach(a => {
+                            const div = document.createElement('div');
+                            div.className = 'flex justify-between items-center p-2 bg-black/20 rounded';
+                            div.innerHTML = `<div><div class="font-bold">${a.name}</div><div class="text-xs text-gray-400">${a.email}</div></div><div class="text-xs text-yellow-400">${new Date(a.registered_at).toLocaleDateString()}</div>`;
+                            listEl.appendChild(div);
+                        });
+                    }
+                    if (local && local.length > 0) {
+                        const hr = document.createElement('div'); hr.className = 'my-2 border-t border-white/5'; listEl.appendChild(hr);
+                        local.forEach(a => {
+                            const div = document.createElement('div');
+                            div.className = 'flex justify-between items-center p-2 bg-black/10 rounded';
+                            div.innerHTML = `<div><div class="font-bold">${a.name} <span class="text-xs text-cyan-300">(local)</span></div><div class="text-xs text-gray-400">${a.email}</div></div><div class="text-xs text-yellow-400">${a.registered_at.split('T')[0]}</div>`;
+                            listEl.appendChild(div);
+                        });
+                    }
+                    if (listEl.innerHTML === '') {
+                        listEl.innerHTML = '<div class="text-center text-gray-500 py-2">No hay cuentas locales</div>';
+                    }
+                } catch (err) {
+                    console.error("Error loading accounts:", err);
+                    listEl.innerHTML = 'Error al cargar cuentas.';
+                }
+            }
+            renderLoggedUser();
+        }
+
+        function closeAccountModal() {
+            document.getElementById('account-modal').classList.add('hidden');
+        }
+        window.openAccountModal = openAccountModal;
+        window.closeAccountModal = closeAccountModal;
+
+        async function registerAccount() {
+            const name = document.getElementById('acct-name').value.trim();
+            const email = document.getElementById('acct-email').value.trim();
+            const password = document.getElementById('acct-password').value.trim();
+            const birth = document.getElementById('acct-birth').value;
+            const terms = document.getElementById('acct-terms').checked;
+
+            if (!name || !email || !terms || !password || !birth) {
+                showCustomAlert('Todos los campos son obligatorios.', 'Faltan Datos');
+                return;
+            }
+
+            // Validar edad (mínimo 18 años)
+            const birthDate = new Date(birth);
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const m = today.getMonth() - birthDate.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+            if (age < 18) {
+                showCustomAlert('Debes ser mayor de 18 años para registrarte.', 'Acceso Denegado');
+                return;
+            }
+
+            if (!supabaseClient) {
+                showCustomAlert("El sistema de conexión no está listo. Por favor refresca la página.", "Error de Red");
+                return;
+            }
+
+            const { data, error } = await supabaseClient.auth.signUp({
+                email: email,
+                password: password,
+                options: {
+                    data: {
+                        full_name: name,
+                        birth_date: birth,
+                        accepted_terms: terms
+                    }
+                }
+            });
+
+            if (error) {
+                showCustomAlert('Error al registrar: ' + error.message, 'Fallo en Registro');
+                return;
+            }
+
+            // Supabase envía un correo de verificación si la opción está activada
+            showCustomAlert('¡Registro iniciado! Se ha enviado un correo a ' + email + '. Por favor, confirma tu cuenta para poder entrar.', '¡Casi Listo!');
+            closeAccountModal();
+        }
+        window.registerAccount = registerAccount;
+
+        // Authentication state
+
+        async function fetchUserProfile(userId) {
+            console.log("Fetching profile for user:", userId);
+            if (!supabaseClient) {
+                console.error("fetchUserProfile aborted: supabaseClient is null");
+                return;
+            }
+            try {
+                const { data, error } = await supabaseClient
+                    .from('profiles')
+                    .select('name, games_available')
+                    .eq('id', userId)
+                    .single();
+
+                if (error) {
+                    console.warn("Error fetching profile data (ignoring if new user):", error.message);
+                    // At least ensure currentUser has some data if profile is missing
+                    if (currentUser && !currentUser.name) currentUser.name = "Jugador";
+                } else if (data) {
+                    console.log("Profile data loaded:", data);
+                    currentUser.name = data.name;
+                    currentUser.games_available = data.games_available;
+                }
+            } catch (err) {
+                console.error("Unexpected error in fetchUserProfile:", err);
+            } finally {
+                renderLoggedUser();
+            }
+        }
+
+        // Detectar cambios en la sesión (automático) eliminado de aquí para centralizarlo
+
+        function renderLoggedUser() {
+            const el = document.getElementById('logged-user-display');
+            const gamesEl = document.getElementById('user-games');
+
+            const authSection = document.getElementById('auth-section');
+            const profileSection = document.getElementById('profile-section');
+            const profileName = document.getElementById('profile-name-display');
+            const profileGames = document.getElementById('profile-games-display');
+
+            if (currentUser) {
+                // UI Principal
+                if (el) el.querySelector('span').textContent = `Conectado: ${currentUser.name || 'Usuario'}`;
+                if (gamesEl) {
+                    gamesEl.classList.remove('hidden');
+                    gamesEl.textContent = `${currentUser.games_available || 0} PARTIDAS DISPONIBLES`;
+                }
+
+                // Modal
+                if (authSection) authSection.classList.add('hidden');
+                if (profileSection) profileSection.classList.remove('hidden');
+                if (profileName) profileName.textContent = currentUser.name || 'Usuario';
+                if (profileGames) profileGames.textContent = currentUser.games_available || 0;
+            } else {
+                // UI Principal
+                if (el) el.querySelector('span').textContent = 'No conectado';
+                if (gamesEl) gamesEl.classList.add('hidden');
+
+                // Modal
+                if (authSection) authSection.classList.remove('hidden');
+                if (profileSection) profileSection.classList.add('hidden');
+            }
+        }
+
+        // Funciones de la Tienda / Perfil
+        async function buyGames(amount, price) {
+            if (!currentUser || !supabaseClient) return;
+
+            // Simular pago y actualización de DB
+            const confirmPurchase = confirm(`Se cargaran ${price}€ a tu método de pago para comprar ${amount} partidas. ¿Confirmar?`);
+
+            if (confirmPurchase) {
+                const newTotal = (currentUser.games_available || 0) + amount;
+                const { error } = await supabaseClient
+                    .from('profiles')
+                    .update({ games_available: newTotal })
+                    .eq('id', currentUser.id);
+
+                if (error) {
+                    showCustomAlert("Hubo un error al tramitar la compra.", "Transacción Fallida");
+                } else {
+                    currentUser.games_available = newTotal;
+                    renderLoggedUser();
+                    showCustomAlert(`¡Compra exitosa! Has recibido +${amount} partidas.`, "Pago Aprobado");
+                }
+            }
+        }
+        window.buyGames = buyGames;
+
+        async function shareInvite() {
+            if (!currentUser || !supabaseClient) return;
+            const emailInput = document.getElementById('share-email-input');
+            const targetEmail = emailInput.value.trim();
+
+            if (!targetEmail || !targetEmail.includes('@')) {
+                showCustomAlert("Por favor, introduce un correo electrónico válido del amigo a invitar.", "Atención");
+                return;
+            }
+
+            // Simular envío de invitación y suma de 1 partida
+            const newTotal = (currentUser.games_available || 0) + 1;
+            const { error } = await supabaseClient
+                .from('profiles')
+                .update({ games_available: newTotal })
+                .eq('id', currentUser.id);
+
+            if (error) {
+                showCustomAlert("No se pudo enviar la invitación en este momento.", "Error");
+            } else {
+                currentUser.games_available = newTotal;
+                renderLoggedUser();
+                emailInput.value = ""; // Limpiar input
+                showCustomAlert(`¡Invitación enviada a ${targetEmail}! Te hemos regalado +1 partida.`, "Amigo Invitado");
+            }
+        }
+        window.shareInvite = shareInvite;
+
+        async function logoutAccount() {
+            if (!supabaseClient) return;
+            const { error } = await supabaseClient.auth.signOut();
+            if (error) {
+                showCustomAlert("Error al cerrar sesión: " + error.message, "Error");
+            } else {
+                currentUser = null;
+                window.currentUser = null;
+                renderLoggedUser();
+                closeAccountModal();
+            }
+        }
+        window.logoutAccount = logoutAccount;
+
+        async function loginAccount() {
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value.trim();
+            console.log("Attempting login for:", email);
+
+            if (!email || !password) {
+                showCustomAlert('Introduce correo y contraseña.', 'Atención');
+                return;
+            }
+
+            if (!supabaseClient) {
+                console.error("Login aborted: supabaseClient is null");
+                showCustomAlert("El sistema de conexión no está listo.", "Error de Sistema");
+                return;
+            }
+
+            try {
+                const { data, error } = await supabaseClient.auth.signInWithPassword({
+                    email: email,
+                    password: password,
+                });
+
+                if (error) {
+                    console.error("Login error from Supabase:", error.message);
+                    showCustomAlert('Error al iniciar sesión: ' + error.message, 'Fallo al Entrar');
+                    return;
+                }
+
+                console.log("Login successful, session established.");
+                // El onAuthStateChange se encargará de actualizar currentUser y llamar a fetchUserProfile
+                closeAccountModal();
+            } catch (err) {
+                console.error("Connectivity error during login:", err);
+                showCustomAlert("Error de conexión al intentar iniciar sesión.", "Fallo de Red");
+            }
+        }
+        window.loginAccount = loginAccount;
+
+        function saveCurrentUser() { localStorage.setItem('jr_current_user', JSON.stringify(currentUser)); }
+        function loadCurrentUser() { try { const r = localStorage.getItem('jr_current_user'); if (r) currentUser = JSON.parse(r); } catch (e) { } renderLoggedUser(); }
+
+        // Real OAuth flow with Supabase
+        async function oauthMock(provider) {
+            if (!supabaseClient) {
+                showCustomAlert("El sistema de conexión no está listo.", "Error");
+                return;
+            }
+            const { data, error } = await supabaseClient.auth.signInWithOAuth({
+                provider: provider,
+                options: {
+                    redirectTo: window.location.origin
+                }
+            });
+
+            if (error) {
+                showCustomAlert('Error con OAuth: ' + error.message, 'Fallo');
+            }
+        }
+        window.oauthMock = oauthMock;
+
+        let gameState = {
+            players: [],
+            penaltyName: "RETO",
+            gameMode: "amigos",
+            currentRound: 1,
+            currentPlayerIndex: 0,
+            timer: null,
+            secondsLeft: 30,
+            isGameOver: false,
+            activeGame: false // Track if a game is currently being played
+        };
+
+        function confirmExit() {
+            stopTimer();
+            document.getElementById('exit-modal').classList.remove('hidden');
+        }
+
+        function closeExitModal() {
+            document.getElementById('exit-modal').classList.add('hidden');
+            if (!document.getElementById('game-actions').classList.contains('hidden')) {
+                startTimer();
+            }
+        }
+        window.confirmExit = confirmExit;
+        window.closeExitModal = closeExitModal;
+
+        function addPlayerInput() {
+            const container = document.getElementById('players-list');
+            const rowCount = container.querySelectorAll('.player-row').length;
+            if (rowCount >= 12) return;
+
+            const div = document.createElement('div');
+            div.className = 'player-row flex items-center gap-2';
+            div.dataset.gender = "";
+            div.innerHTML = `
+                <input type="text" class="player-input w-full bg-gray-900 border-l-4 border-pink-500 p-2 rounded text-white outline-none font-bold" placeholder="Jugador ${rowCount + 1}">
+                <div class="flex gap-1">
+                    <button onclick="selectGender(this, 'M')" class="gender-btn flex-shrink-0 w-10 h-10 rounded-full bg-gray-800 border-2 border-gray-600 flex items-center justify-center text-xl font-bold transition-all text-gray-500 hover:text-gray-300">♂</button>
+                    <button onclick="selectGender(this, 'F')" class="gender-btn flex-shrink-0 w-10 h-10 rounded-full bg-gray-800 border-2 border-gray-600 flex items-center justify-center text-xl font-bold transition-all text-gray-500 hover:text-gray-300">♀</button>
+                </div>
+                <button onclick="removePlayerInput(this)" class="btn-remove flex-shrink-0">✕</button>
+            `;
+            container.appendChild(div);
+            div.querySelector('input').focus();
+            updatePlayerLabels();
+        }
+
+        function selectGender(btn, gender) {
+            const row = btn.closest('.player-row');
+            row.dataset.gender = gender;
+
+            const btns = row.querySelectorAll('.gender-btn');
+            // Reset both styles
+            btns[0].className = "gender-btn flex-shrink-0 w-10 h-10 rounded-full bg-gray-800 border-2 border-gray-600 flex items-center justify-center text-xl font-bold transition-all text-gray-500 hover:text-gray-300";
+            btns[1].className = "gender-btn flex-shrink-0 w-10 h-10 rounded-full bg-gray-800 border-2 border-gray-600 flex items-center justify-center text-xl font-bold transition-all text-gray-500 hover:text-gray-300";
+
+            // Apply selected styling
+            if (gender === 'M') {
+                btns[0].className = "gender-btn flex-shrink-0 w-10 h-10 rounded-full bg-cyan-600 border-2 border-cyan-400 flex items-center justify-center text-xl font-bold shadow-[0_0_10px_rgba(8,145,178,0.5)] transition-all text-white scale-110";
+            } else {
+                btns[1].className = "gender-btn flex-shrink-0 w-10 h-10 rounded-full bg-pink-600 border-2 border-pink-400 flex items-center justify-center text-xl font-bold shadow-[0_0_10px_rgba(236,72,153,0.5)] transition-all text-white scale-110";
+            }
+        }
+        window.selectGender = selectGender;
+
+        function removePlayerInput(btn) {
+            const container = document.getElementById('players-list');
+            if (container.querySelectorAll('.player-row').length > 2) {
+                btn.closest('.player-row').remove();
+                updatePlayerLabels();
+            }
+        }
+        window.addPlayerInput = addPlayerInput;
+        window.removePlayerInput = removePlayerInput;
+
+        function updatePlayerLabels() {
+            const rows = document.querySelectorAll('.player-row');
+            rows.forEach((row, index) => {
+                const input = row.querySelector('.player-input');
+                // Actualizar el placeholder para que siempre diga "Jugador X" correlativamente
+                input.placeholder = `Jugador ${index + 1}`;
+
+                let btn = row.querySelector('.btn-remove');
+
+                // Si hay 2 o menos jugadores, quitamos los botones de eliminar
+                if (rows.length <= 2) {
+                    if (btn) btn.remove();
+                } else {
+                    // Si hay más de 2 y el botón no existe, lo creamos
+                    if (!btn) {
+                        const removeBtn = document.createElement('button');
+                        removeBtn.className = 'btn-remove';
+                        removeBtn.onclick = function () { removePlayerInput(this); };
+                        removeBtn.innerText = '✕';
+                        row.appendChild(removeBtn);
+                    }
+                }
+            });
+        }
+
+        async function startGame() {
+            const playerInputs = document.querySelectorAll('.player-input');
+            const playerNames = Array.from(playerInputs).map((input, index) => {
+                const row = input.closest('.player-row');
+                const selectedGender = row.dataset.gender;
+                const val = input.value.trim();
+                // Si el input está vacío, usamos el nombre del placeholder
+                return { name: val !== "" ? val : `Jugador ${index + 1}`, gender: selectedGender };
+            });
+
+            const penalty = document.getElementById('penalty-name').value.trim();
+            const mode = document.getElementById('game-mode').value;
+
+            const missingGender = playerNames.some(p => !p.gender);
+
+            if (playerNames.length < 2 || missingGender) {
+                if (missingGender) {
+                    showCustomAlert("Por favor, selecciona si es hombre (♂) o mujer (♀) para todos los jugadores antes de empezar.", "Falta Selección");
+                }
+                document.getElementById('players-list').classList.add('animate-shake');
+                setTimeout(() => document.getElementById('players-list').classList.remove('animate-shake'), 500);
+                return;
+            }
+
+            // Inicializar DB y cargar preguntas filtradas por categoria (mode)
+            let loaded = [];
+            await initDatabase();
+            loaded = await loadRandomQuestionsFromDB(mode, 20);
+
+            if (!loaded || loaded.length === 0) {
+                console.warn("No se encontraron preguntas en la base de datos para la categoría:", mode);
+                questions = SEED_QUESTIONS.map(text => ({ text, gender: null })); // Fallback as objects
+            } else {
+                questions = loaded;
+            }
+
+            // Mezclar preguntas para aleatoriedad básica
+            questions.sort(() => Math.random() - 0.5);
+
+            gameState.players = playerNames.map(p => ({ name: p.name, gender: p.gender, score: 0 }));
+            gameState.penaltyName = penalty || "RETO";
+            gameState.gameMode = mode;
+            gameState.usedQuestionIndices = new Set();
+
+            document.getElementById('setup-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+            document.getElementById('display-mode').textContent = mode.toUpperCase();
+            document.querySelectorAll('.penalty-label').forEach(el => el.textContent = gameState.penaltyName);
+
+            adjustTimerCircle();
+            loadRound();
+        }
+
+        // Wrapper to ensure user is logged in before starting and has games available
+        async function startButtonClicked() {
+            if (!currentUser) {
+                showCustomAlert('Debes iniciar sesión antes de empezar la partida.', 'Acceso Denegado');
+                openAccountModal();
+                return;
+            }
+
+            if (currentUser.games_available <= 0) {
+                showCustomAlert('No tienes partidas disponibles. Consigue más para jugar.', 'Sin Partidas');
+                return;
+            }
+
+            if (!supabaseClient) {
+                showCustomAlert("El sistema de conexión no está listo.", "Error Interno");
+                return;
+            }
+
+            // No descontamos aquí, solo marcamos como activa
+            gameState.activeGame = true;
+            startGame();
+        }
+        window.startButtonClicked = startButtonClicked;
+
+        async function consumeGame() {
+            if (!gameState.activeGame || !currentUser || !supabaseClient) return;
+
+            console.log("Consumiendo una partida...");
+            // Restar una partida en la base de datos
+            const { error } = await supabaseClient
+                .from('profiles')
+                .update({ games_available: currentUser.games_available - 1 })
+                .eq('id', currentUser.id);
+
+            if (error) {
+                console.error("Error al descontar partida:", error);
+            } else {
+                currentUser.games_available--;
+                renderLoggedUser();
+                console.log("Partida descontada con éxito.");
+            }
+            gameState.activeGame = false;
+        }
+
+        function adjustTimerCircle() {
+            const bar = document.getElementById('timer-bar');
+            const bg = document.getElementById('timer-bg-circle');
+            const r = window.innerWidth < 640 ? 22 : 28;
+            [bar, bg].forEach(circle => {
+                circle.setAttribute('r', r);
+                circle.setAttribute('cx', 32);
+                circle.setAttribute('cy', 32);
+            });
+            bar.style.strokeDasharray = 2 * Math.PI * r;
+        }
+
+        function loadRound() {
+            if (gameState.currentRound > 20) { endGame(); return; }
+            stopTimer();
+            gameState.secondsLeft = 30;
+            updateTimerUI();
+            document.getElementById('game-actions').classList.remove('hidden');
+            document.getElementById('game-actions').classList.add('grid');
+            document.getElementById('next-action-container').classList.add('hidden');
+            document.getElementById('status-message').textContent = "";
+            const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+            document.getElementById('round-counter').textContent = `${gameState.currentRound} / 20`;
+            document.getElementById('player-name-tag').textContent = currentPlayer.name;
+            document.getElementById('player-score-tag').textContent = `${currentPlayer.score} PUNTOS`;
+
+            // Buscar la primera pregunta válida para el género del jugador que no haya sido usada
+            let questionToDisplay = "No hay más preguntas disponibles en esta categoría.";
+            for (let i = 0; i < questions.length; i++) {
+                if (gameState.usedQuestionIndices.has(i)) continue;
+
+                const q = questions[i];
+                // Lógica de género: si está vacío (null/undefined) es para todos. 
+                // Si tiene valor, debe coincidir con el género del jugador.
+                if (!q.gender || q.gender === currentPlayer.gender) {
+                    questionToDisplay = q.text;
+                    gameState.usedQuestionIndices.add(i);
+                    break;
+                }
+            }
+
+            document.getElementById('question-text').textContent = questionToDisplay;
+            startTimer();
+        }
+
+        function startTimer() {
+            const circle = document.getElementById('timer-bar');
+            const r = parseInt(circle.getAttribute('r'));
+            const circumference = 2 * Math.PI * r;
+            gameState.timer = setInterval(() => {
+                gameState.secondsLeft--;
+                circle.style.strokeDashoffset = circumference - (gameState.secondsLeft / 30) * circumference;
+                document.getElementById('timer-text').textContent = gameState.secondsLeft;
+                if (gameState.secondsLeft <= 0) timeUp();
+            }, 1000);
+        }
+
+        function stopTimer() { clearInterval(gameState.timer); }
+
+        function updateTimerUI() {
+            const circle = document.getElementById('timer-bar');
+            if (circle) circle.style.strokeDashoffset = 0;
+            document.getElementById('timer-text').textContent = "30";
+        }
+
+        function timeUp() {
+            stopTimer();
+            gameState.players[gameState.currentPlayerIndex].score -= 1;
+            document.getElementById('question-text').innerHTML = `<span class="text-red-500 uppercase italic font-black">¡TIEMPO AGOTADO!</span><br><span class="text-xl sm:text-2xl mt-4 block font-bold text-white tracking-widest">CASTIGO: ${gameState.penaltyName} (-1)</span>`;
+            showNextButton();
+        }
+
+        function handleResponse(type) {
+            stopTimer();
+            const player = gameState.players[gameState.currentPlayerIndex];
+            if (type === 'contestó') {
+                player.score += 1;
+                document.getElementById('status-message').textContent = "¡SINCERIDAD: +1 PUNTO!";
+            } else {
+                player.score -= 1;
+                document.getElementById('status-message').textContent = `¡SALUD! -1 PUNTO`;
+            }
+            document.getElementById('player-score-tag').textContent = `${player.score} PUNTOS`;
+            showNextButton();
+        }
+        window.handleResponse = handleResponse;
+
+        function showNextButton() {
+            document.getElementById('game-actions').classList.add('hidden');
+            document.getElementById('game-actions').classList.remove('grid');
+            document.getElementById('next-action-container').classList.remove('hidden');
+        }
+
+        function nextTurn() {
+            gameState.currentRound++;
+            gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % gameState.players.length;
+            loadRound();
+        }
+        window.nextTurn = nextTurn;
+
+        function endGame() {
+            document.getElementById('game-screen').classList.add('hidden');
+            document.getElementById('end-screen').classList.remove('hidden');
+            const scoreboard = document.getElementById('scoreboard-final');
+            scoreboard.innerHTML = "";
+            [...gameState.players].sort((a, b) => b.score - a.score).forEach((p, index) => {
+                const div = document.createElement('div');
+                div.className = "flex justify-between items-center py-4 border-b border-white/5 last:border-0";
+                div.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="text-pink-500 font-black text-xl italic">#${index + 1}</span>
+                        <span class="font-bold text-white uppercase">${p.name}</span>
+                    </div>
+                    <span class="text-yellow-400 font-black tracking-widest">${p.score} PTS</span>
+                `;
+                scoreboard.appendChild(div);
+            });
+            consumeGame(); // Descontar partida al finalizar con éxito
+        }
+
+        // Detectar cambios en la sesión (automático) eliminado de aquí para centralizarlo
+
+        function resetToSetup() {
+            // Si la partida estaba activa, se consume al abandonar
+            if (gameState.activeGame) {
+                consumeGame();
+            }
+            // Reset game state
+            gameState.currentRound = 1;
+            gameState.currentPlayerIndex = 0;
+            gameState.players = [];
+            gameState.timer = null;
+            gameState.secondsLeft = 30;
+            stopTimer();
+
+            // Reset UI
+            document.getElementById('setup-screen').classList.remove('hidden');
+            document.getElementById('game-screen').classList.add('hidden');
+            document.getElementById('end-screen').classList.add('hidden');
+            document.getElementById('exit-modal').classList.add('hidden');
+
+            // Clean table
+            // Eliminado el reset forzado de players-list para mantener los nombres y cantidad de jugadores puestos por el usuario
+            updatePlayerLabels();
+        }
+        window.resetToSetup = resetToSetup;
+
+        window.addEventListener('resize', adjustTimerCircle);
+        // Inicializar etiquetas al cargar
+        updatePlayerLabels();
+
+        // --- Lanzamiento Final de la App ---
+        console.log("App script loaded. Initializing Supabase...");
+        initSupabase();
+        // Fallback en caso de que la librería tarde en cargar
+        window.addEventListener('load', () => {
+            if (!supabaseClient) {
+                console.log("Retrying initialization on window load...");
+                initSupabase();
+            }
+        });
+    </script>
+</body>
+
+</html>
