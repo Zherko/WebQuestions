@@ -15,6 +15,8 @@
         href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Montserrat:wght@400;700;900&display=swap"
         rel="stylesheet">
     <link rel="icon" type="image/png" href="favicon.png">
+    <!-- PayPal SDK (Sandbox por defecto, cambiar a live en producción) -->
+    <script src="https://www.paypal.com/sdk/js?client-id=test&currency=EUR&disable-funding=credit,card"></script>
     <style>
         :root {
             --neon-pink: #ff00ff;
@@ -460,30 +462,34 @@
                         <span class="text-sm font-black text-gray-300 uppercase tracking-widest">Partidas</span>
                     </div>
 
-                    <!-- Precios Tienda -->
+                    <!-- Precios Tienda con PayPal -->
                     <h4 class="text-xs font-black uppercase text-cyan-300 tracking-[0.2em] mb-3 text-left">Tienda de
                         Partidas</h4>
-                    <div class="grid grid-cols-3 gap-3">
-                        <button onclick="buyGames(1, 1.00)"
-                            class="bg-black/50 hover:bg-pink-600 border border-white/10 hover:border-pink-500 rounded-2xl p-3 transition-all group shadow-lg">
-                            <span class="block text-2xl font-black text-white group-hover:text-white mb-1">+1</span>
-                            <span
-                                class="block text-[10px] text-gray-400 font-bold uppercase group-hover:text-white">1.00€</span>
-                        </button>
-                        <button onclick="buyGames(3, 2.50)"
-                            class="bg-black/50 hover:bg-pink-600 border border-white/10 hover:border-pink-500 rounded-2xl p-3 transition-all group shadow-lg ring-1 ring-cyan-500/50">
-                            <span
-                                class="block text-xs font-bold text-cyan-400 group-hover:text-white mb-1 uppercase tracking-widest">Ahorro</span>
-                            <span class="block text-2xl font-black text-white group-hover:text-white mb-1">+3</span>
-                            <span
-                                class="block text-[10px] text-gray-400 font-bold uppercase group-hover:text-white">2.50€</span>
-                        </button>
-                        <button onclick="buyGames(10, 7.00)"
-                            class="bg-black/50 hover:bg-pink-600 border border-white/10 hover:border-pink-500 rounded-2xl p-3 transition-all group shadow-lg">
-                            <span class="block text-2xl font-black text-white group-hover:text-white mb-1">+10</span>
-                            <span
-                                class="block text-[10px] text-gray-400 font-bold uppercase group-hover:text-white">7.00€</span>
-                        </button>
+                    <div class="grid grid-cols-1 gap-3">
+                        <div id="paypal-button-container" class="w-full min-h-[150px] relative z-0">
+                            <!-- Aquí se renderizarán los botones de PayPal -->
+                            <div
+                                class="flex items-center justify-center p-4 bg-black/20 rounded-xl border border-dashed border-white/20">
+                                <span class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Cargando
+                                    métodos de pago...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Packs Informativos -->
+                    <div class="grid grid-cols-3 gap-2 mt-4">
+                        <div class="bg-black/30 p-2 rounded-xl border border-white/5">
+                            <span class="block text-lg font-black text-white">+1</span>
+                            <span class="block text-[8px] text-gray-500 font-bold uppercase">1.00€</span>
+                        </div>
+                        <div class="bg-black/30 p-2 rounded-xl border border-cyan-500/30">
+                            <span class="block text-lg font-black text-white">+3</span>
+                            <span class="block text-[8px] text-gray-500 font-bold uppercase">2.50€</span>
+                        </div>
+                        <div class="bg-black/30 p-2 rounded-xl border border-white/5">
+                            <span class="block text-lg font-black text-white">+10</span>
+                            <span class="block text-[8px] text-gray-500 font-bold uppercase">7.00€</span>
+                        </div>
                     </div>
                 </div>
 
@@ -932,28 +938,96 @@
                 }
             }
 
-            // Funciones de la Tienda / Perfil
-            async function buyGames(amount, price) {
-                if (!currentUser || !supabaseClient) return;
-
-                // Simular pago y actualización de DB
-                const confirmPurchase = confirm(`Se cargaran ${price}€ a tu método de pago para comprar ${amount} partidas. ¿Confirmar?`);
-
-                if (confirmPurchase) {
-                    const newTotal = (currentUser.games_available || 0) + amount;
-                    const { error } = await supabaseClient
-                        .from('profiles')
-                        .update({ games_available: newTotal })
-                        .eq('id', currentUser.id);
-
-                    if (error) {
-                        showCustomAlert("Hubo un error al tramitar la compra.", "Transacción Fallida");
-                    } else {
-                        currentUser.games_available = newTotal;
-                        renderLoggedUser();
-                        showCustomAlert(`¡Compra exitosa! Has recibido +${amount} partidas.`, "Pago Aprobado");
-                    }
+            // --- PayPal Integration ---
+            function initPayPalButtons() {
+                if (!window.paypal) {
+                    console.warn("PayPal SDK not loaded yet. Retrying...");
+                    setTimeout(initPayPalButtons, 1000);
+                    return;
                 }
+
+                const container = document.getElementById('paypal-button-container');
+                if (!container) return;
+
+                // Limpiar contenedor antes de renderizar
+                container.innerHTML = '';
+
+                window.paypal.Buttons({
+                    style: {
+                        layout: 'vertical',
+                        color: 'blue',
+                        shape: 'rect',
+                        label: 'paypal'
+                    },
+                    createOrder: async function (data, actions) {
+                        if (!currentUser) {
+                            showCustomAlert("Inicia sesión para comprar.", "Atención");
+                            return;
+                        }
+
+                        // Aquí llamaremos a nuestra Edge Function para crear la orden de forma segura
+                        // Por ahora, simulamos la creación para que veas el flujo
+                        // NOTA: Para producción, esto DEBE pasar por la Edge Function paypal-create-order
+                        return actions.order.create({
+                            purchase_units: [{
+                                amount: {
+                                    value: '2.50', // Pack de 3 partidas por defecto para la prueba
+                                    currency_code: 'EUR'
+                                },
+                                description: 'Pack de 3 Partidas - Party Roulette'
+                            }]
+                        });
+                    },
+                    onApprove: async function (data, actions) {
+                        showCustomAlert("Procesando pago... No cierres esta ventana.", "Pago en curso");
+
+                        return actions.order.capture().then(async function (details) {
+                            console.log("Pago capturado por PayPal:", details);
+
+                            // Enviar confirmación a nuestra Edge Function para validar y sumar partidas
+                            // NOTA: Para producción, el Webhook de PayPal es el que debe sumar las partidas de forma segura.
+                            // Aquí hacemos una actualización directa para que puedas probar la interfaz.
+
+                            const amountPaid = parseFloat(details.purchase_units[0].amount.value);
+                            let gamesToAdd = 1;
+                            if (amountPaid >= 7.00) gamesToAdd = 10;
+                            else if (amountPaid >= 2.50) gamesToAdd = 3;
+
+                            const newTotal = (currentUser.games_available || 0) + gamesToAdd;
+
+                            const { error } = await supabaseClient
+                                .from('profiles')
+                                .update({ games_available: newTotal })
+                                .eq('id', currentUser.id);
+
+                            if (error) {
+                                showCustomAlert("Error al actualizar tu saldo. Contacta con soporte.", "Error");
+                            } else {
+                                currentUser.games_available = newTotal;
+                                renderLoggedUser();
+                                showCustomAlert(`¡Gracias ${details.payer.name.given_name}! Has recibido +${gamesToAdd} partidas.`, "Compra Completada");
+                            }
+                        });
+                    },
+                    onError: function (err) {
+                        console.error("PayPal Error:", err);
+                        showCustomAlert("Hubo un error con la pasarela de PayPal.", "Error de Pago");
+                    }
+                }).render('#paypal-button-container');
+            }
+
+            // Llamar a la inicialización cuando se abre el modal de cuenta y el usuario está logueado
+            const originalOpenAccountModal = window.openAccountModal;
+            window.openAccountModal = async function () {
+                await originalOpenAccountModal();
+                if (currentUser) {
+                    setTimeout(initPayPalButtons, 100);
+                }
+            };
+
+            // Antigua función buyGames se mantiene como fallback o se elimina
+            async function buyGames(amount, price) {
+                showCustomAlert("Usa los botones de PayPal oficiales que aparecen arriba para comprar partidas de forma segura.", "Información");
             }
             window.buyGames = buyGames;
 
