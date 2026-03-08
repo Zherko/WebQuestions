@@ -693,6 +693,12 @@
                         console.log("User is logged in:", session.user.id);
                         currentUser = { id: session.user.id };
                         window.currentUser = currentUser;
+
+                        // Cerrar modal pronto para dar sensación de velocidad
+                        if (event === 'SIGNED_IN') {
+                            closeAccountModal();
+                        }
+
                         await fetchUserProfile(session.user.id);
                     } else if (event === 'SIGNED_OUT') {
                         console.log("User signed out.");
@@ -909,16 +915,19 @@
                         .from('profiles')
                         .select('name, games_available')
                         .eq('id', userId)
-                        .single();
+                        .maybeSingle(); // Usamos maybeSingle para evitar errores si no existe
 
                     if (error) {
-                        console.warn("Error fetching profile data (ignoring if new user):", error.message);
-                        // At least ensure currentUser has some data if profile is missing
-                        if (currentUser && !currentUser.name) currentUser.name = "Jugador";
-                    } else if (data) {
+                        console.warn("Error fetching profile data:", error.message);
+                    }
+
+                    if (data) {
                         console.log("Profile data loaded:", data);
                         currentUser.name = data.name;
                         currentUser.games_available = data.games_available;
+                    } else {
+                        // Fallback si el perfil no existe todavía (trigger lento)
+                        if (currentUser && !currentUser.name) currentUser.name = "Jugador";
                     }
                 } catch (err) {
                     console.error("Unexpected error in fetchUserProfile:", err);
@@ -1156,29 +1165,15 @@
                     if (error) {
                         console.error("Error de login en Supabase:", error.message);
                         showCustomAlert('Credenciales incorrectas o cuenta no confirmada.', 'Fallo al Entrar');
-                        // Resetear botón
-                        if (btn) {
-                            btn.textContent = originalText;
-                            btn.disabled = false;
-                            btn.style.opacity = "1";
-                        }
                         return;
                     }
 
                     console.log("Login exitoso.");
-                    // Pequeño retraso para que el usuario vea el éxito antes de cerrar
-                    setTimeout(() => {
-                        closeAccountModal();
-                        if (btn) {
-                            btn.textContent = originalText;
-                            btn.disabled = false;
-                            btn.style.opacity = "1";
-                        }
-                    }, 500);
-
                 } catch (err) {
-                    console.error("Error inesperado durante el login:", err);
-                    showCustomAlert("Error inesperado al intentar entrar.", "Fallo de Sistema");
+                    console.error("Error inesperado en loginAccount:", err);
+                    showCustomAlert("Ocurrió un error inesperado al intentar entrar.", "Error");
+                } finally {
+                    // SIEMPRE resetear el botón, pase lo que pase
                     const btn = document.querySelector('button[onclick="loginAccount()"]');
                     if (btn) {
                         btn.textContent = "Entrar";
