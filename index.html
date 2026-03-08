@@ -402,10 +402,18 @@
                 <div class="mb-4">
                     <h4 class="text-sm font-black uppercase text-cyan-300 mb-2">Iniciar sesión</h4>
                     <div class="space-y-2">
-                        <input id="login-email" type="email" placeholder="Correo"
-                            class="w-full bg-gray-900 p-2 rounded text-white outline-none" />
-                        <input id="login-password" type="password" placeholder="Contraseña"
-                            class="w-full bg-gray-900 p-2 rounded text-white outline-none" />
+                        <div class="relative">
+                            <input id="login-email" type="email" placeholder="Correo"
+                                class="w-full bg-gray-900/50 border border-white/5 p-3 rounded-xl text-white outline-none focus:border-cyan-500 transition-all text-sm" />
+                        </div>
+                        <div class="relative">
+                            <input id="login-password" type="password" placeholder="Contraseña"
+                                class="w-full bg-gray-900/50 border border-white/5 p-3 rounded-xl text-white outline-none focus:border-cyan-500 transition-all text-sm" />
+                            <button type="button" onclick="togglePassword('login-password', this)"
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-cyan-400 transition-colors">
+                                <span class="text-lg">👁️</span>
+                            </button>
+                        </div>
                         <div class="flex gap-2">
                             <button onclick="loginAccount()"
                                 class="flex-1 bg-cyan-600 hover:bg-cyan-500 active:scale-95 transition-all py-2 rounded-xl font-black uppercase">Entrar</button>
@@ -423,8 +431,14 @@
                         class="w-full bg-gray-900 p-2 rounded text-white outline-none" />
                     <input id="acct-email" type="email" placeholder="Correo"
                         class="w-full bg-gray-900 p-2 rounded text-white outline-none" />
-                    <input id="acct-password" type="password" placeholder="Contraseña"
-                        class="w-full bg-gray-900 p-2 rounded text-white outline-none" />
+                    <div class="relative">
+                        <input id="acct-password" type="password" placeholder="Contraseña"
+                            class="w-full bg-gray-900/50 border border-white/5 p-3 rounded-xl text-white outline-none focus:border-cyan-500 transition-all text-sm" />
+                        <button type="button" onclick="togglePassword('acct-password', this)"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-pink-400 transition-colors">
+                            <span class="text-lg">👁️</span>
+                        </button>
+                    </div>
                     <input id="acct-birth" type="date" placeholder="Fecha de nacimiento"
                         class="w-full bg-gray-900 p-2 rounded text-white outline-none" />
                     <label class="flex items-center gap-2 text-xs"><input id="acct-terms" type="checkbox" /> Acepto
@@ -803,7 +817,7 @@
                             });
                         }
                         if (listEl.innerHTML === '') {
-                            listEl.innerHTML = '<div class="text-center text-gray-500 py-2">No hay cuentas locales</div>';
+                            listEl.innerHTML = '<div class="text-center text-gray-500 py-2 opacity-50 italic">Utiliza una de las opciones de abajo para entrar.</div>';
                         }
                     } catch (err) {
                         console.error("Error loading accounts:", err);
@@ -1096,42 +1110,63 @@
             window.logoutAccount = logoutAccount;
 
             async function loginAccount() {
-                const email = document.getElementById('login-email').value.trim();
-                const password = document.getElementById('login-password').value.trim();
-                console.log("Attempting login for:", email);
+                const emailInput = document.getElementById('login-email');
+                const passwordInput = document.getElementById('login-password');
+                const email = emailInput.value.trim();
+                const password = passwordInput.value.trim();
+
+                console.log("Intentando login para:", email);
 
                 if (!email || !password) {
-                    showCustomAlert('Introduce correo y contraseña.', 'Atención');
+                    showCustomAlert('Por favor, introduce tu correo y contraseña.', 'Datos Incompletos');
                     return;
                 }
 
                 if (!supabaseClient) {
-                    console.error("Login aborted: supabaseClient is null");
-                    showCustomAlert("El sistema de conexión no está listo.", "Error de Sistema");
+                    console.error("Login abortado: supabaseClient es null");
+                    showCustomAlert("El sistema no está listo. Por favor, recarga.", "Error de Sistema");
                     return;
                 }
 
                 try {
+                    // Feedback visual en el botón
+                    const btn = event?.target || document.querySelector('button[onclick="loginAccount()"]');
+                    const originalText = btn.textContent;
+                    if (btn) btn.textContent = "Entrando...";
+
                     const { data, error } = await supabaseClient.auth.signInWithPassword({
                         email: email,
                         password: password,
                     });
 
                     if (error) {
-                        console.error("Login error from Supabase:", error.message);
-                        showCustomAlert('Error al iniciar sesión: ' + error.message, 'Fallo al Entrar');
+                        if (btn) btn.textContent = originalText;
+                        console.error("Error de login en Supabase:", error.message);
+                        showCustomAlert('Credenciales incorrectas o cuenta no confirmada.', 'Fallo al Entrar');
                         return;
                     }
 
-                    console.log("Login successful, session established.");
-                    // El onAuthStateChange se encargará de actualizar currentUser y llamar a fetchUserProfile
+                    console.log("Login exitoso.");
                     closeAccountModal();
                 } catch (err) {
-                    console.error("Connectivity error during login:", err);
-                    showCustomAlert("Error de conexión al intentar iniciar sesión.", "Fallo de Red");
+                    console.error("Error de conexión durante el login:", err);
+                    showCustomAlert("Error de conexión al servidor.", "Fallo de Red");
                 }
             }
             window.loginAccount = loginAccount;
+
+            function togglePassword(inputId, btn) {
+                const input = document.getElementById(inputId);
+                const icon = btn.querySelector('span');
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.textContent = '🙈';
+                } else {
+                    input.type = 'password';
+                    icon.textContent = '👁️';
+                }
+            }
+            window.togglePassword = togglePassword;
 
             // Removed redundant localStorage functions for currentUser to avoid conflicts with Supabase persistence
 
