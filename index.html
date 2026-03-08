@@ -958,29 +958,53 @@
             window.buyGames = buyGames;
 
             async function shareInvite() {
-                if (!currentUser || !supabaseClient) return;
+                if (!currentUser || !supabaseClient) {
+                    showCustomAlert("Debes estar conectado para invitar a amigos.", "Atención");
+                    return;
+                }
                 const emailInput = document.getElementById('share-email-input');
-                const targetEmail = emailInput.value.trim();
+                const targetEmail = emailInput.value.trim().toLowerCase();
 
                 if (!targetEmail || !targetEmail.includes('@')) {
                     showCustomAlert("Por favor, introduce un correo electrónico válido del amigo a invitar.", "Atención");
                     return;
                 }
 
-                // Simular envío de invitación y suma de 1 partida
-                const newTotal = (currentUser.games_available || 0) + 1;
-                const { error } = await supabaseClient
-                    .from('profiles')
-                    .update({ games_available: newTotal })
-                    .eq('id', currentUser.id);
+                if (targetEmail === currentUser.email) {
+                    showCustomAlert("No puedes invitarte a ti mismo.", "Curioso...");
+                    return;
+                }
 
-                if (error) {
-                    showCustomAlert("No se pudo enviar la invitación en este momento.", "Error");
-                } else {
-                    currentUser.games_available = newTotal;
-                    renderLoggedUser();
+                try {
+                    // 1. Registrar la invitación en la tabla 'invitaciones'
+                    const { error } = await supabaseClient
+                        .from('invitaciones')
+                        .insert({
+                            remitente_id: currentUser.id,
+                            email_invitado: targetEmail
+                        });
+
+                    if (error) {
+                        console.error("Error al registrar invitación:", error);
+                        // Si el error es por duplicado o RLS, informamos
+                        showCustomAlert("No se pudo registrar la invitación. Es posible que ya hayas invitado a este correo.", "Error");
+                        return;
+                    }
+
+                    // 2. Abrir cliente de correo con el enlace de la app
+                    const appUrl = window.location.origin;
+                    const subject = encodeURIComponent("¡Juega conmigo a Party Roulette!");
+                    const body = encodeURIComponent(`¡Hola! Te invito a jugar a Party Roulette, el juego de beber definitivo.\n\nRegístrate con este correo (${targetEmail}) y échale un vistazo aquí:\n${appUrl}\n\n¡Nos vemos en la fiesta!`);
+
+                    window.location.href = `mailto:${targetEmail}?subject=${subject}&body=${body}`;
+
+                    // 3. Feedback visual
                     emailInput.value = ""; // Limpiar input
-                    showCustomAlert(`¡Invitación enviada a ${targetEmail}! Te hemos regalado +1 partida.`, "Amigo Invitado");
+                    showCustomAlert(`¡Invitación registrada! Cuando tu amigo se registre con el correo ${targetEmail}, recibirás automáticamente +1 partida extra.`, "Invitación Enviada");
+
+                } catch (err) {
+                    console.error("Unexpected error in shareInvite:", err);
+                    showCustomAlert("Hubo un problema inesperado al enviar la invitación.", "Error");
                 }
             }
             window.shareInvite = shareInvite;
