@@ -610,6 +610,7 @@
             const SUPABASE_ANON_KEY = 'sb_publishable_4-Se2F_XjCyQ8QdS0HN84w_Wb0ddQ5f';
             let supabaseClient; // Renombrado para evitar conflictos con la librería global
             let currentUser = null;
+            let isRegistering = false; // Flag para evitar que la UI cambie sola durante el registro
 
             // Función segura de inicialización
             function initSupabase() {
@@ -689,13 +690,20 @@
                 }
                 supabaseClient.auth.onAuthStateChange(async (event, session) => {
                     console.log("Auth event received:", event, session ? "Session present" : "No session");
+
+                    // Si estamos registrando, ignoramos eventos de login automáticos para no romper la UI
+                    if (isRegistering && event !== 'SIGNED_OUT') {
+                        console.log("Ignoring auth event during registration flow.");
+                        return;
+                    }
+
                     if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'USER_UPDATED') && session) {
                         console.log("User is logged in:", session.user.id);
-                        currentUser = { id: session.user.id };
+                        currentUser = { id: session.user.id, email: session.user.email };
                         window.currentUser = currentUser;
 
-                        // Cerrar modal pronto para dar sensación de velocidad
-                        if (event === 'SIGNED_IN') {
+                        // Solo cerramos el modal si el usuario ha hecho login explícitamente
+                        if (event === 'SIGNED_IN' && !isRegistering) {
                             closeAccountModal();
                         }
 
@@ -861,6 +869,8 @@
                     return;
                 }
 
+                isRegistering = true; // Bloquear cambios de UI automáticos
+
                 // Validar edad (mínimo 18 años)
                 const birthDate = new Date(birth);
                 const today = new Date();
@@ -893,11 +903,13 @@
 
                 if (error) {
                     showCustomAlert('Error al registrar: ' + error.message, 'Fallo en Registro');
+                    isRegistering = false;
                     return;
                 }
 
                 // Supabase envía un correo de verificación si la opción está activada
                 showCustomAlert('¡Registro iniciado! Se ha enviado un correo a ' + email + '. Por favor, confirma tu cuenta para poder entrar.', '¡Casi Listo!');
+                isRegistering = false; // Liberar flag
                 closeAccountModal();
             }
             window.registerAccount = registerAccount;
@@ -948,18 +960,22 @@
                 const profileGames = document.getElementById('profile-games-display');
 
                 if (currentUser) {
-                    // UI Principal
+                    // Si estamos en proceso de registro, NO cambiamos la vista del modal
+                    if (isRegistering) {
+                        console.log("renderLoggedUser: Skipping modal update during registration.");
+                    } else {
+                        if (authSection) authSection.classList.add('hidden');
+                        if (profileSection) profileSection.classList.remove('hidden');
+                        if (profileName) profileName.textContent = currentUser.name || 'Conectado';
+                        if (profileGames) profileGames.textContent = currentUser.games_available || 0;
+                    }
+
+                    // UI Principal (fuera del modal) siempre se actualiza
                     if (el) el.querySelector('span').textContent = `Conectado: ${currentUser.name || 'Usuario'}`;
                     if (gamesEl) {
                         gamesEl.classList.remove('hidden');
                         gamesEl.textContent = `${currentUser.games_available || 0} PARTIDAS DISPONIBLES`;
                     }
-
-                    // Modal
-                    if (authSection) authSection.classList.add('hidden');
-                    if (profileSection) profileSection.classList.remove('hidden');
-                    if (profileName) profileName.textContent = currentUser.name || 'Usuario';
-                    if (profileGames) profileGames.textContent = currentUser.games_available || 0;
                 } else {
                     // UI Principal
                     if (el) el.querySelector('span').textContent = 'No conectado';
@@ -1118,13 +1134,16 @@
 
             async function logoutAccount() {
                 if (!supabaseClient) return;
+                console.log("Iniciando cierre de sesión completo...");
                 const { error } = await supabaseClient.auth.signOut();
                 if (error) {
-                    showCustomAlert("Error al cerrar sesión: " + error.message, "Error");
-                } else {
-                    clearLocalSession();
-                    closeAccountModal();
+                    console.error("Error en signOut:", error.message);
                 }
+
+                // Limpieza forzosa independientemente del error
+                clearLocalSession();
+                closeAccountModal();
+                showCustomAlert("Sesión cerrada correctamente.", "Bye!");
             }
             window.logoutAccount = logoutAccount;
 
