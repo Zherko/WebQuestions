@@ -16,7 +16,7 @@
         rel="stylesheet">
     <link rel="icon" type="image/png" href="favicon.png">
     <!-- PayPal SDK (Sandbox por defecto, cambiar a live en producción) -->
-    <script src="https://www.paypal.com/sdk/js?client-id=test&currency=EUR&disable-funding=credit,card"></script>
+    <script src="https://www.paypal.com/sdk/js?client-id=test&currency=EUR"></script>
     <style>
         :root {
             --neon-pink: #ff00ff;
@@ -396,8 +396,7 @@
 
             <!-- CONTENEDOR NO AUTENTICADO (Login/Registro) -->
             <div id="auth-section">
-                <h3 class="text-2xl font-black mb-2 uppercase">Gestionar Cuenta</h3>
-                <div id="accounts-list" class="mb-4 max-h-40 overflow-y-auto text-sm space-y-2"></div>
+                <h3 class="text-2xl font-black mb-6 uppercase">Gestionar Cuenta</h3>
 
                 <div class="mb-4">
                     <h4 class="text-sm font-black uppercase text-cyan-300 mb-2">Iniciar sesión</h4>
@@ -451,9 +450,12 @@
                     </div>
                     <input id="acct-birth" type="date" placeholder="Fecha de nacimiento"
                         class="w-full bg-gray-900 p-2 rounded text-white outline-none" />
-                    <label class="flex items-center gap-2 text-xs"><input id="acct-terms" type="checkbox" /> Acepto
-                        términos
-                        y condiciones</label>
+                    <label class="flex items-center gap-2 text-xs">
+                        <input id="acct-terms" type="checkbox" />
+                        Acepto <button onclick="window.open('terms.html', '_blank', 'width=600,height=800')"
+                            class="text-cyan-400 underline hover:text-cyan-300 transition-colors">términos y
+                            condiciones</button>
+                    </label>
                 </div>
                 <div class="flex gap-3">
                     <button onclick="registerAccount()"
@@ -533,10 +535,16 @@
                     </div>
                 </div>
 
-                <!-- Footer -->
-                <button onclick="logoutAccount()"
-                    class="w-full bg-transparent text-red-500 hover:bg-red-600 hover:text-white border border-red-500/30 py-4 rounded-2xl font-black uppercase transition-all tracking-[0.2em] text-sm">Cerrar
-                    Sesión</button>
+                <!-- Footer Actions -->
+                <div class="space-y-3">
+                    <button onclick="window.open('terms.html', '_blank', 'width=600,height=800')"
+                        class="w-full bg-white/5 text-gray-400 hover:text-white border border-white/10 py-3 rounded-xl font-bold uppercase transition-all tracking-widest text-[10px]">Ver
+                        Términos y Condiciones</button>
+
+                    <button onclick="logoutAccount()"
+                        class="w-full bg-transparent text-red-500 hover:bg-red-600 hover:text-white border border-red-500/30 py-4 rounded-2xl font-black uppercase transition-all tracking-[0.2em] text-sm">Cerrar
+                        Sesión</button>
+                </div>
             </div>
 
         </div>
@@ -779,33 +787,6 @@
                 return data;
             }
 
-            // --- Accounts DB reading (read-only) ---
-            async function loadAccountsSqlite() {
-                try {
-                    if (!SQL) SQL = await initSqlJs({ locateFile: file => 'https://cdn.jsdelivr.net/npm/sql.js@1.8.0/dist/' + file });
-                    const resp = await fetch('accounts.sqlite');
-                    if (!resp.ok) return [];
-                    const ab = await resp.arrayBuffer();
-                    const accountsDb = new SQL.Database(new Uint8Array(ab));
-                    const res = accountsDb.exec('SELECT id, name, email, registered_at, birth_date, accepted_terms FROM accounts ORDER BY registered_at DESC;');
-                    if (!res || res.length === 0) return [];
-                    return res[0].values.map(r => ({ id: r[0], name: r[1], email: r[2], registered_at: r[3], birth_date: r[4], accepted_terms: !!r[5] }));
-                } catch (e) {
-                    return [];
-                }
-            }
-
-            function getLocalAccounts() {
-                try {
-                    const raw = localStorage.getItem('jr_local_accounts');
-                    if (!raw) return [];
-                    return JSON.parse(raw);
-                } catch (e) { return []; }
-            }
-
-            function saveLocalAccounts(list) {
-                localStorage.setItem('jr_local_accounts', JSON.stringify(list));
-            }
 
             async function openAccountModal() {
                 console.log("Opening account modal...");
@@ -815,39 +796,6 @@
                     return;
                 }
                 modal.classList.remove('hidden');
-
-                const listEl = document.getElementById('accounts-list');
-                if (listEl) {
-                    listEl.innerHTML = 'Cargando...';
-                    try {
-                        const fromFile = await loadAccountsSqlite();
-                        const local = getLocalAccounts();
-                        listEl.innerHTML = '';
-                        if (fromFile && fromFile.length > 0) {
-                            fromFile.forEach(a => {
-                                const div = document.createElement('div');
-                                div.className = 'flex justify-between items-center p-2 bg-black/20 rounded';
-                                div.innerHTML = `<div><div class="font-bold">${a.name}</div><div class="text-xs text-gray-400">${a.email}</div></div><div class="text-xs text-yellow-400">${new Date(a.registered_at).toLocaleDateString()}</div>`;
-                                listEl.appendChild(div);
-                            });
-                        }
-                        if (local && local.length > 0) {
-                            const hr = document.createElement('div'); hr.className = 'my-2 border-t border-white/5'; listEl.appendChild(hr);
-                            local.forEach(a => {
-                                const div = document.createElement('div');
-                                div.className = 'flex justify-between items-center p-2 bg-black/10 rounded';
-                                div.innerHTML = `<div><div class="font-bold">${a.name} <span class="text-xs text-cyan-300">(local)</span></div><div class="text-xs text-gray-400">${a.email}</div></div><div class="text-xs text-yellow-400">${a.registered_at.split('T')[0]}</div>`;
-                                listEl.appendChild(div);
-                            });
-                        }
-                        if (listEl.innerHTML === '') {
-                            listEl.innerHTML = '';
-                        }
-                    } catch (err) {
-                        console.error("Error loading accounts:", err);
-                        listEl.innerHTML = 'Error al cargar cuentas.';
-                    }
-                }
                 renderLoggedUser();
             }
 
