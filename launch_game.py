@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Lanza un servidor HTTP local y abre `Juego01.html` en el navegador.
+"""Lanza un servidor HTTP local y abre `index.html` en el navegador.
 
 Ejemplo:
   python launch_game.py
-  python launch_game.py --file Juego01.html --port 8080
+  python launch_game.py --file index.html --port 8080
 """
 from http.server import SimpleHTTPRequestHandler
 from socketserver import ThreadingTCPServer
@@ -36,14 +36,14 @@ def run_server(directory: Path, port: int):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Lanza Juego01.html con servidor local")
-    parser.add_argument("--file", "-f", help="Nombre del fichero HTML a abrir (por defecto Juego01.html)")
+    parser = argparse.ArgumentParser(description="Lanza index.html con servidor local")
+    parser.add_argument("--file", "-f", help="Nombre del fichero HTML a abrir (por defecto index.html)")
     parser.add_argument("--port", "-p", type=int, default=0, help="Puerto (0 para elegir uno libre)")
     args = parser.parse_args()
 
     script_dir = Path(__file__).resolve().parent
 
-    target_name = args.file if args.file else "Juego01.html"
+    target_name = args.file if args.file else "index.html"
     target = script_dir / target_name
     if not target.exists():
         print(f"No se encontró {target_name} en: {script_dir}")
