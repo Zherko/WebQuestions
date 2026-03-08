@@ -8,11 +8,26 @@ def update_git():
     os.chdir(current_dir)
     
     # Mensaje de commit personalizado o por defecto
-    commit_msg = " ".join(sys.argv[1:]) if len(sys.argv) > 1 else "Auto-update: Syncing project and transparent icons"
+    if len(sys.argv) > 1:
+        # Usamos un generador para evitar el error de tipado con rebanadas (slice) si el linter es estricto
+        commit_msg = " ".join(sys.argv[i] for i in range(1, len(sys.argv)))
+    else:
+        commit_msg = "Auto-update: Syncing project and cleaning up MCP folders"
 
     try:
         print(f"--- Sincronizando repositorio en: {current_dir} ---")
         
+        # 0. Desincronizar carpetas que ya no deben estar en git (mcp-supabase, mcp-supabases)
+        folders_to_unsync = ["mcp-supabase", "mcp-supabases"]
+        for folder in folders_to_unsync:
+            try:
+                # Intentamos quitar de la caché de git sin borrar archivos locales
+                # Redirigimos stderr para no mostrar errores molestos si la carpeta no está en el índice
+                subprocess.run(["git", "rm", "-r", "--cached", folder], 
+                               capture_output=True, text=True, check=False)
+            except Exception:
+                pass
+
         # 1. Agregar todos los cambios
         subprocess.run(["git", "add", "."], check=True)
         print("✓ Cambios agregados.")

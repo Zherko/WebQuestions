@@ -17,6 +17,7 @@ __pycache__/
 
 # MCP Server (External)
 mcp-supabase/
+mcp-supabases/
 
 # OS
 Thumbs.db
