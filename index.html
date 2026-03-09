@@ -196,6 +196,44 @@
         .btn-install-pulse {
             animation: pulse-cyan 2s infinite;
         }
+
+        /* Variables CSS personalizadas extra */
+        .custom-select-wrapper {
+            position: relative;
+            user-select: none;
+        }
+
+        .custom-select {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .custom-options {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            border-top: 0;
+            z-index: 50;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transform: translateY(-10px);
+            transition: all 0.2s ease;
+        }
+
+        .custom-select-wrapper.open .custom-options {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: all;
+            transform: translateY(0);
+        }
+
+        .custom-select-wrapper.open .custom-select-arrow {
+            transform: rotate(180deg);
+        }
     </style>
 </head>
 
@@ -206,6 +244,22 @@
         <h1
             class="text-4xl sm:text-5xl text-center font-logo title-flicker text-pink-500 mb-8 tracking-widest uppercase italic transform -rotate-2">
             PARTY ROULETTE</h1>
+
+        <!-- CONSUE DE DEPURACIÓN EN PANTALLA PARA DETECTAR ERRORES -->
+        <div id="on-screen-debug"
+            class="hidden bg-black/80 text-green-400 font-mono text-[10px] p-2 rounded mb-4 max-h-32 overflow-y-auto w-full break-words border border-green-500/30">
+            [DEBUG LOG ACTIVO]<br />
+        </div>
+        <script>
+            window.onerror = function (msg, url, line) {
+                document.getElementById('on-screen-debug').innerHTML += '<br/><span style="color:red">ERR: ' + msg + ' (L:' + line + ')</span>';
+            };
+            const originalConsoleError = console.error;
+            console.error = function (...args) {
+                document.getElementById('on-screen-debug').innerHTML += '<br/><span style="color:orange">C_ERR: ' + args.join(' ') + '</span>';
+                originalConsoleError.apply(console, args);
+            };
+        </script>
         <div class="flex justify-between items-center mb-4">
             <div>
                 <button onclick="openAccountModal()"
@@ -228,14 +282,29 @@
             <div>
                 <label class="block text-xs font-black text-cyan-400 mb-2 uppercase tracking-[0.2em]">Tipo de
                     Juego</label>
-                <select id="game-mode"
-                    class="w-full bg-gray-900 border-b-2 border-cyan-500 p-3 rounded-t text-white outline-none focus:bg-gray-800 transition cursor-pointer font-bold">
-                    <option value="amigos">Amigos</option>
-                    <option value="conociendonos">Conociéndonos</option>
-                    <option value="picante">Picante</option>
-                    <option value="pareja">Pareja</option>
-                    <option value="extremo">Extremo</option>
-                </select>
+                <!-- Custom Select Game Mode -->
+                <div class="custom-select-wrapper w-full" id="game-mode-wrapper">
+                    <input type="hidden" id="game-mode" value="amigos">
+                    <div class="custom-select w-full bg-gray-900 border-b-2 border-cyan-500 p-3 rounded-t text-white outline-none cursor-pointer font-bold transition hover:bg-gray-800"
+                        onclick="toggleCustomSelect('game-mode-wrapper')">
+                        <span class="custom-select-trigger">Amigos</span>
+                        <div class="custom-select-arrow transition-transform duration-200">▼</div>
+                    </div>
+                    <div
+                        class="custom-options bg-gray-900 border border-t-0 border-cyan-500/50 rounded-b shadow-[0_10px_20px_rgba(0,0,0,0.5)] overflow-hidden">
+                        <div class="custom-option p-3 text-white font-bold hover:bg-cyan-600/30 cursor-pointer transition select-option-active"
+                            data-value="amigos" onclick="selectCustomOption('game-mode-wrapper', this)">Amigos</div>
+                        <div class="custom-option p-3 text-gray-400 font-bold hover:bg-cyan-600/30 cursor-pointer transition"
+                            data-value="conociendonos" onclick="selectCustomOption('game-mode-wrapper', this)">
+                            Conociéndonos</div>
+                        <div class="custom-option p-3 text-gray-400 font-bold hover:bg-cyan-600/30 cursor-pointer transition"
+                            data-value="picante" onclick="selectCustomOption('game-mode-wrapper', this)">Picante</div>
+                        <div class="custom-option p-3 text-gray-400 font-bold hover:bg-cyan-600/30 cursor-pointer transition"
+                            data-value="pareja" onclick="selectCustomOption('game-mode-wrapper', this)">Pareja</div>
+                        <div class="custom-option p-3 text-gray-400 font-bold hover:bg-cyan-600/30 cursor-pointer transition"
+                            data-value="extremo" onclick="selectCustomOption('game-mode-wrapper', this)">Extremo</div>
+                    </div>
+                </div>
             </div>
 
             <div>
@@ -610,6 +679,78 @@
             </div>
         </div>
 
+        <!-- Modal Pregunta Personalizada -->
+        <div id="custom-question-modal"
+            class="hidden fixed inset-0 bg-black/95 backdrop-blur-xl flex items-center justify-center p-4"
+            style="z-index: 99999 !important;">
+            <div class="glass-panel p-6 sm:p-8 rounded-[2rem] max-w-md w-full max-h-[90vh] overflow-y-auto">
+                <h3
+                    class="text-2xl font-black mb-2 text-pink-500 uppercase tracking-widest italic text-center text-[18px]">
+                    ¿Quieres añadir preguntas o reto a esta ronda?</h3>
+                <p class="text-xs font-bold uppercase tracking-widest text-center text-gray-400 mb-6">Categoría: <span
+                        id="custom-q-category" class="text-cyan-400">AMIGOS</span></p>
+
+                <div class="space-y-4 mb-6 relative">
+                    <div>
+                        <label
+                            class="block text-[10px] font-black text-cyan-400 mb-2 uppercase tracking-[0.2em]">Dificultad</label>
+                        <!-- Custom Select Difficulty -->
+                        <div class="custom-select-wrapper w-full" id="difficulty-mode-wrapper">
+                            <input type="hidden" id="custom-q-difficulty" value="medio">
+                            <div class="custom-select w-full bg-gray-900 border-b-2 border-cyan-500 p-3 rounded-t text-white outline-none cursor-pointer font-bold transition text-sm hover:bg-gray-800"
+                                onclick="toggleCustomSelect('difficulty-mode-wrapper')">
+                                <span class="custom-select-trigger text-sm">Medio</span>
+                                <div class="custom-select-arrow transition-transform duration-200 text-xs">▼</div>
+                            </div>
+                            <div
+                                class="custom-options bg-gray-900 border border-t-0 border-cyan-500/50 rounded-b shadow-[0_10px_20px_rgba(0,0,0,0.5)] overflow-hidden z-[5000]">
+                                <div class="custom-option p-3 text-gray-400 font-bold hover:bg-cyan-600/30 cursor-pointer transition text-sm"
+                                    data-value="facil" onclick="selectCustomOption('difficulty-mode-wrapper', this)">
+                                    Fácil</div>
+                                <div class="custom-option p-3 text-white font-bold hover:bg-cyan-600/30 cursor-pointer transition text-sm select-option-active"
+                                    data-value="medio" onclick="selectCustomOption('difficulty-mode-wrapper', this)">
+                                    Medio</div>
+                                <div class="custom-option p-3 text-gray-400 font-bold hover:bg-cyan-600/30 cursor-pointer transition text-sm"
+                                    data-value="dificil" onclick="selectCustomOption('difficulty-mode-wrapper', this)">
+                                    Difícil</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <label
+                            class="block text-[10px] font-black text-cyan-400 mb-2 uppercase tracking-[0.2em]">Dirigido
+                            a</label>
+                        <div class="flex gap-2 justify-center" id="custom-q-gender-container" data-gender="">
+                            <button type="button" onclick="selectCustomGender(this, '')"
+                                class="gender-btn-custom gender-btn-custom-both flex-1 py-3 rounded-xl bg-gray-800 border-2 border-gray-600 font-black text-gray-500 hover:text-gray-300 transition-all text-sm shadow-[0_0_10px_rgba(255,255,255,0.2)] text-white scale-105">Ambos
+                                ♂♀</button>
+                            <button type="button" onclick="selectCustomGender(this, 'M')"
+                                class="gender-btn-custom flex-1 py-3 rounded-xl bg-gray-800 border-2 border-gray-600 font-black text-gray-500 hover:text-gray-300 transition-all text-sm">Chicos
+                                ♂</button>
+                            <button type="button" onclick="selectCustomGender(this, 'F')"
+                                class="gender-btn-custom flex-1 py-3 rounded-xl bg-gray-800 border-2 border-gray-600 font-black text-gray-500 hover:text-gray-300 transition-all text-sm">Chicas
+                                ♀</button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-white mb-2 uppercase tracking-[0.2em]">¡Escribe
+                            tu texto!</label>
+                        <textarea id="custom-q-text" rows="3" placeholder="Ej: ¿Cuál es tu mayor secreto?"
+                            class="w-full bg-black/50 border border-white/20 p-3 rounded-xl text-white outline-none focus:border-pink-500 transition-all text-sm resize-none"></textarea>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-3">
+                    <button onclick="submitCustomQuestion()"
+                        class="w-full bg-pink-600 hover:bg-pink-500 active:scale-95 transition-all py-4 rounded-xl font-black uppercase tracking-widest text-sm shadow-[0_0_15px_rgba(236,72,153,0.4)]">Añadir
+                        a la Partida</button>
+                    <button onclick="skipCustomQuestion()"
+                        class="w-full bg-transparent border border-white/10 text-gray-400 hover:text-white active:scale-95 transition-all py-4 rounded-xl font-black uppercase tracking-widest text-xs">¡Iniciar
+                        Partida!</button>
+                </div>
+            </div>
+        </div>
+
         <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
         <script>
@@ -617,28 +758,147 @@
             const SUPABASE_URL = 'https://zqjvhemwjdqjxecemnwh.supabase.co';
             const SUPABASE_ANON_KEY = 'sb_publishable_4-Se2F_XjCyQ8QdS0HN84w_Wb0ddQ5f';
             let supabaseClient; // Renombrado para evitar conflictos con la librería global
+            let supabaseReady = false;
+            let authListenerInitialized = false;
+            let supabaseInitAttempts = 0;
+            const MAX_SUPABASE_INIT_ATTEMPTS = 8;
+            let isLoggingOut = false;
             let currentUser = null;
             let isRegistering = false; // Flag para evitar que la UI cambie sola durante el registro
+            let pendingCustomQuestions = []; // Almacenará las preguntas nuevas añadidas en lote
+
+            function setSupabaseReady(value) {
+                supabaseReady = value;
+                window.supabaseReady = value;
+            }
+
+            function getDisplayName(user) {
+                if (!user) return 'Usuario';
+                return user.name || user.email?.split('@')[0] || 'Usuario';
+            }
+
+            function wait(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+
+            function buildUserFromSession(session) {
+                if (!session?.user) return null;
+
+                return {
+                    id: session.user.id,
+                    email: session.user.email,
+                    name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Jugador'
+                };
+            }
+
+            async function applyAuthenticatedSession(session, options = {}) {
+                const { closeModal = false } = options;
+                const nextUser = buildUserFromSession(session);
+
+                if (!nextUser) {
+                    clearLocalSession();
+                    return;
+                }
+
+                currentUser = nextUser;
+                window.currentUser = currentUser;
+                renderLoggedUser();
+
+                if (closeModal) {
+                    closeAccountModal();
+                }
+
+                try {
+                    await fetchUserProfile(nextUser.id);
+                } catch (err) {
+                    console.warn('No se pudo completar la carga del perfil tras autenticar:', err);
+                }
+            }
+
+            function purgeSupabaseSessionStorage() {
+                try {
+                    const storageKeys = [];
+                    const projectRef = (() => {
+                        try {
+                            return new URL(SUPABASE_URL).hostname.split('.')[0];
+                        } catch {
+                            return null;
+                        }
+                    })();
+
+                    for (let i = 0; i < localStorage.length; i++) {
+                        const key = localStorage.key(i);
+                        if (!key) continue;
+                        if ((projectRef && key.includes(projectRef) && key.includes('auth-token')) || key.startsWith('sb-') || key.includes('supabase')) {
+                            storageKeys.push(key);
+                        }
+                    }
+
+                    storageKeys.forEach(key => localStorage.removeItem(key));
+
+                    const sessionKeys = [];
+                    for (let i = 0; i < sessionStorage.length; i++) {
+                        const key = sessionStorage.key(i);
+                        if (!key) continue;
+                        if ((projectRef && key.includes(projectRef) && key.includes('auth-token')) || key.startsWith('sb-') || key.includes('supabase')) {
+                            sessionKeys.push(key);
+                        }
+                    }
+
+                    sessionKeys.forEach(key => sessionStorage.removeItem(key));
+                } catch (err) {
+                    console.warn('No se pudo purgar el storage de Supabase:', err);
+                }
+            }
 
             // Función segura de inicialización
             function initSupabase() {
+                if (supabaseClient && supabaseReady) {
+                    return supabaseClient;
+                }
+
                 console.log("Attempting to initialize Supabase...");
                 try {
-                    if (window.supabase) {
+                    if (window.supabase?.createClient) {
                         const { createClient } = window.supabase;
                         supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                        setSupabaseReady(true);
+                        supabaseInitAttempts = 0;
                         window.supabaseClient = supabaseClient; // Expose for debugging
                         console.log("Supabase initialized successfully.");
                         setupAuthListener();
                         checkInitialSession();
+                        return supabaseClient;
                     } else {
-                        console.warn("Supabase library not yet available.");
+                        supabaseInitAttempts++;
+                        const retryDelay = Math.min(1500, supabaseInitAttempts * 250);
+                        console.warn(`Supabase library not yet available. Retry ${supabaseInitAttempts}/${MAX_SUPABASE_INIT_ATTEMPTS} in ${retryDelay}ms.`);
+                        if (supabaseInitAttempts < MAX_SUPABASE_INIT_ATTEMPTS) {
+                            setTimeout(() => initSupabase(), retryDelay);
+                        }
                     }
                 } catch (e) {
+                    setSupabaseReady(false);
                     console.error("Error initializing Supabase:", e);
                 }
+
+                return null;
             }
             window.initSupabase = initSupabase;
+
+            async function waitForSupabaseReady(timeoutMs = 1500) {
+                if (supabaseClient && supabaseReady) return true;
+
+                initSupabase();
+                const startedAt = Date.now();
+
+                while (Date.now() - startedAt < timeoutMs) {
+                    if (supabaseClient && supabaseReady) return true;
+                    await wait(100);
+                }
+
+                return !!(supabaseClient && supabaseReady);
+            }
 
             // Custom Alert Logic
             function showCustomAlert(message, title = null) {
@@ -671,33 +931,71 @@
                 renderLoggedUser();
             }
 
-            async function checkInitialSession() {
-                if (!supabaseClient) return;
-                console.log("Checking for initial session...");
-                const { data: { session }, error } = await supabaseClient.auth.getSession();
-                if (error) {
-                    console.error("Error getting initial session:", error);
+            async function checkInitialSession(retriesLeft = 2) {
+                if (isLoggingOut) {
+                    console.log("Skipping initial session check because logout is in progress.");
                     clearLocalSession();
                     return;
                 }
-                if (session) {
-                    console.log("Initial session found:", session.user.email);
-                    currentUser = { id: session.user.id };
-                    window.currentUser = currentUser;
-                    await fetchUserProfile(session.user.id);
-                } else {
-                    console.log("No initial session found.");
+                if (!supabaseClient) {
+                    const ready = await waitForSupabaseReady(1200);
+                    if (!ready || !supabaseClient) {
+                        console.warn("Skipping initial session check: Supabase still not ready.");
+                        renderLoggedUser();
+                        return;
+                    }
+                }
+                console.log("Checking for initial session...");
+                try {
+                    const { data: { session }, error } = await supabaseClient.auth.getSession();
+                    if (error) {
+                        console.error("Error getting initial session:", error);
+                        if (retriesLeft > 0) {
+                            await wait(250);
+                            return checkInitialSession(retriesLeft - 1);
+                        }
+                        clearLocalSession();
+                        return;
+                    }
+
+                    if (session) {
+                        if (isLoggingOut) {
+                            console.log("Session detected during logout. Ignoring restored session.");
+                            clearLocalSession();
+                            return;
+                        }
+                        console.log("Initial session found:", session.user.email);
+                        await applyAuthenticatedSession(session);
+                    } else {
+                        console.log("No initial session found.");
+                        clearLocalSession();
+                    }
+                } catch (err) {
+                    console.error("Unexpected error getting initial session:", err);
+                    if (retriesLeft > 0) {
+                        await wait(250);
+                        return checkInitialSession(retriesLeft - 1);
+                    }
                     clearLocalSession();
                 }
             }
 
             function setupAuthListener() {
+                if (authListenerInitialized) {
+                    return;
+                }
                 if (!supabaseClient) {
                     console.error("Cannot setup auth listener: supabaseClient is null");
                     return;
                 }
-                supabaseClient.auth.onAuthStateChange(async (event, session) => {
+                authListenerInitialized = true;
+                supabaseClient.auth.onAuthStateChange((event, session) => {
                     console.log("Auth event received:", event, session ? "Session present" : "No session");
+
+                    if (isLoggingOut && event !== 'SIGNED_OUT') {
+                        console.log("Ignoring auth event while logout is in progress:", event);
+                        return;
+                    }
 
                     // Si estamos registrando, ignoramos eventos de login automáticos para no romper la UI
                     if (isRegistering && event !== 'SIGNED_OUT') {
@@ -707,18 +1005,14 @@
 
                     if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'USER_UPDATED') && session) {
                         console.log("User is logged in:", session.user.id);
-                        currentUser = { id: session.user.id, email: session.user.email };
-                        window.currentUser = currentUser;
-
-                        // Solo cerramos el modal si el usuario ha hecho login explícitamente
-                        if (event === 'SIGNED_IN' && !isRegistering) {
-                            closeAccountModal();
-                        }
-
-                        await fetchUserProfile(session.user.id);
+                        setTimeout(() => {
+                            applyAuthenticatedSession(session, {
+                                closeModal: event === 'SIGNED_IN' && !isRegistering
+                            });
+                        }, 0);
                     } else if (event === 'SIGNED_OUT') {
                         console.log("User signed out.");
-                        clearLocalSession();
+                        setTimeout(() => clearLocalSession(), 0);
                     }
                 });
             }
@@ -796,7 +1090,14 @@
                     return;
                 }
                 modal.classList.remove('hidden');
-                renderLoggedUser();
+                if (!supabaseClient || !supabaseReady) {
+                    await waitForSupabaseReady(1500);
+                }
+                if (supabaseClient) {
+                    await checkInitialSession(1);
+                } else {
+                    renderLoggedUser();
+                }
             }
 
             function closeAccountModal() {
@@ -862,12 +1163,50 @@
             }
             window.registerAccount = registerAccount;
 
+            // Custom Select Logic
+            function toggleCustomSelect(wrapperId) {
+                // Cerrar todos los demás primero
+                document.querySelectorAll('.custom-select-wrapper').forEach(w => {
+                    if (w.id !== wrapperId) w.classList.remove('open');
+                });
+                const wrapper = document.getElementById(wrapperId);
+                wrapper.classList.toggle('open');
+            }
+
+            function selectCustomOption(wrapperId, optionElement) {
+                const wrapper = document.getElementById(wrapperId);
+                const input = wrapper.querySelector('input[type="hidden"]');
+                const trigger = wrapper.querySelector('.custom-select-trigger');
+                const options = wrapper.querySelectorAll('.custom-option');
+
+                input.value = optionElement.getAttribute('data-value');
+                trigger.textContent = optionElement.textContent;
+
+                options.forEach(opt => {
+                    opt.classList.remove('text-white', 'select-option-active');
+                    opt.classList.add('text-gray-400');
+                });
+
+                optionElement.classList.add('text-white', 'select-option-active');
+                optionElement.classList.remove('text-gray-400');
+
+                wrapper.classList.remove('open');
+            }
+
+            // Cerrar selects al hacer click fuera
+            document.addEventListener('click', function (e) {
+                if (!e.target.closest('.custom-select-wrapper')) {
+                    document.querySelectorAll('.custom-select-wrapper').forEach(w => w.classList.remove('open'));
+                }
+            });
+
             // Authentication state
 
             async function fetchUserProfile(userId) {
                 console.log("Fetching profile for user:", userId);
                 if (!supabaseClient) {
-                    console.error("fetchUserProfile aborted: supabaseClient is null");
+                    console.warn("fetchUserProfile fallback: supabaseClient is null");
+                    renderLoggedUser();
                     return;
                 }
                 try {
@@ -887,7 +1226,10 @@
                         currentUser.games_available = data.games_available;
                     } else {
                         // Fallback si el perfil no existe todavía (trigger lento)
-                        if (currentUser && !currentUser.name) currentUser.name = "Jugador";
+                        if (currentUser) {
+                            currentUser.name = getDisplayName(currentUser);
+                            currentUser.games_available = currentUser.games_available || 0;
+                        }
                     }
                 } catch (err) {
                     console.error("Unexpected error in fetchUserProfile:", err);
@@ -914,12 +1256,12 @@
                     } else {
                         if (authSection) authSection.classList.add('hidden');
                         if (profileSection) profileSection.classList.remove('hidden');
-                        if (profileName) profileName.textContent = currentUser.name || 'Conectado';
+                        if (profileName) profileName.textContent = getDisplayName(currentUser);
                         if (profileGames) profileGames.textContent = currentUser.games_available || 0;
                     }
 
                     // UI Principal (fuera del modal) siempre se actualiza
-                    if (el) el.querySelector('span').textContent = `Conectado: ${currentUser.name || 'Usuario'}`;
+                    if (el) el.querySelector('span').textContent = `Conectado: ${getDisplayName(currentUser)}`;
                     if (gamesEl) {
                         gamesEl.classList.remove('hidden');
                         gamesEl.textContent = `${currentUser.games_available || 0} PARTIDAS DISPONIBLES`;
@@ -932,6 +1274,16 @@
                     // Modal
                     if (authSection) authSection.classList.remove('hidden');
                     if (profileSection) profileSection.classList.add('hidden');
+                }
+
+                // Lógica del modo Debug (solo visible para admin@admin.com)
+                const debugConsole = document.getElementById('on-screen-debug');
+                if (debugConsole) {
+                    if (currentUser && currentUser.email === 'admin@admin.com') {
+                        debugConsole.classList.remove('hidden');
+                    } else {
+                        debugConsole.classList.add('hidden');
+                    }
                 }
             }
 
@@ -1081,16 +1433,63 @@
             window.shareInvite = shareInvite;
 
             async function logoutAccount() {
-                if (!supabaseClient) return;
-                console.log("Iniciando cierre de sesión completo...");
-                const { error } = await supabaseClient.auth.signOut();
-                if (error) {
-                    console.error("Error en signOut:", error.message);
+                if (isLoggingOut) {
+                    return;
                 }
 
-                // Limpieza forzosa independientemente del error
-                clearLocalSession();
-                closeAccountModal();
+                console.log("Iniciando cierre de sesión completo...");
+                isLoggingOut = true;
+                const logoutBtn = document.querySelector('button[onclick="logoutAccount()"]');
+
+                try {
+                    if (logoutBtn) {
+                        logoutBtn.disabled = true;
+                        logoutBtn.style.opacity = '0.7';
+                    }
+
+                    if (supabaseClient) {
+                        const localResult = await supabaseClient.auth.signOut({ scope: 'local' });
+                        if (localResult?.error) {
+                            console.error("Error en signOut local:", localResult.error.message);
+                            const fallbackResult = await supabaseClient.auth.signOut();
+                            if (fallbackResult?.error) {
+                                console.error("Error en signOut fallback:", fallbackResult.error.message);
+                            }
+                        }
+                    } else {
+                        console.warn("Logout solicitado sin supabaseClient listo. Se limpiará la UI localmente.");
+                    }
+                } catch (err) {
+                    console.error("Error inesperado durante signOut:", err);
+                } finally {
+                    purgeSupabaseSessionStorage();
+                    clearLocalSession();
+                    closeAccountModal();
+
+                    if (logoutBtn) {
+                        logoutBtn.disabled = false;
+                        logoutBtn.style.opacity = '1';
+                    }
+                }
+
+                try {
+                    if (supabaseClient) {
+                        await wait(100);
+                        const { data: { session } } = await supabaseClient.auth.getSession();
+                        if (session) {
+                            console.warn("La sesión seguía presente tras logout. Se fuerza una segunda limpieza local.");
+                            purgeSupabaseSessionStorage();
+                            clearLocalSession();
+                        }
+                    }
+                } catch (err) {
+                    console.warn("No se pudo verificar el estado final del logout:", err);
+                }
+
+                setTimeout(() => {
+                    isLoggingOut = false;
+                }, 400);
+
                 showCustomAlert("Sesión cerrada correctamente.", "Bye!");
             }
             window.logoutAccount = logoutAccount;
@@ -1105,6 +1504,13 @@
 
                 if (!email || !password) {
                     showCustomAlert('Por favor, introduce tu correo y contraseña.', 'Datos Incompletos');
+                    return;
+                }
+
+                const ready = await waitForSupabaseReady(2000);
+                if (!ready || !supabaseClient) {
+                    console.error("Login abortado: Supabase no llegó a estar listo");
+                    showCustomAlert("El sistema no está listo. Por favor, recarga.", "Error de Sistema");
                     return;
                 }
 
@@ -1124,10 +1530,24 @@
                         btn.style.opacity = "0.7";
                     }
 
-                    const { data, error } = await supabaseClient.auth.signInWithPassword({
-                        email: email,
-                        password: password,
-                    });
+                    const { data: { session: existingSession } } = await supabaseClient.auth.getSession();
+                    if (existingSession?.user?.email?.toLowerCase() === email.toLowerCase()) {
+                        console.log("Ya existía una sesión activa para ese usuario. Sincronizando UI...");
+                        await applyAuthenticatedSession(existingSession, { closeModal: true });
+                        return;
+                    }
+
+                    const signInResult = await Promise.race([
+                        supabaseClient.auth.signInWithPassword({
+                            email: email,
+                            password: password,
+                        }),
+                        wait(12000).then(() => {
+                            throw new Error('LOGIN_TIMEOUT');
+                        })
+                    ]);
+
+                    const { data, error } = signInResult;
 
                     if (error) {
                         console.error("Error de login en Supabase:", error.message);
@@ -1135,10 +1555,18 @@
                         return;
                     }
 
+                    if (data?.session) {
+                        await applyAuthenticatedSession(data.session, { closeModal: true });
+                    }
+
                     console.log("Login exitoso.");
                 } catch (err) {
                     console.error("Error inesperado en loginAccount:", err);
-                    showCustomAlert("Ocurrió un error inesperado al intentar entrar.", "Error");
+                    if (err?.message === 'LOGIN_TIMEOUT') {
+                        showCustomAlert("La conexión tardó demasiado. Reintenta en unos segundos.", "Tiempo de espera agotado");
+                    } else {
+                        showCustomAlert("Ocurrió un error inesperado al intentar entrar.", "Error");
+                    }
                 } finally {
                     // SIEMPRE resetear el botón, pase lo que pase
                     const btn = document.querySelector('button[onclick="loginAccount()"]');
@@ -1298,6 +1726,66 @@
                 });
             }
 
+            function selectCustomGender(btn, gender) {
+                const container = document.getElementById('custom-q-gender-container');
+                container.dataset.gender = gender;
+                const btns = container.querySelectorAll('.gender-btn-custom');
+                btns.forEach(b => {
+                    b.className = "gender-btn-custom flex-1 py-3 rounded-xl bg-gray-800 border-2 border-gray-600 font-black text-gray-500 hover:text-gray-300 transition-all text-sm";
+                });
+
+                if (gender === 'M') {
+                    btn.className = "gender-btn-custom flex-1 py-3 rounded-xl bg-cyan-600 border-2 border-cyan-400 font-black shadow-[0_0_10px_rgba(8,145,178,0.5)] transition-all text-white scale-105 text-sm";
+                } else if (gender === 'F') {
+                    btn.className = "gender-btn-custom flex-1 py-3 rounded-xl bg-pink-600 border-2 border-pink-400 font-black shadow-[0_0_10px_rgba(236,72,153,0.5)] transition-all text-white scale-105 text-sm";
+                } else {
+                    btn.className = "gender-btn-custom gender-btn-custom-both flex-1 py-3 rounded-xl bg-yellow-600 border-2 border-yellow-400 font-black shadow-[0_0_10px_rgba(202,138,4,0.5)] transition-all text-white scale-105 text-sm";
+                }
+            }
+
+            async function submitCustomQuestion() {
+                const text = document.getElementById('custom-q-text').value.trim();
+                const difficulty = document.getElementById('custom-q-difficulty').value;
+                const gender = document.getElementById('custom-q-gender-container').dataset.gender;
+                const category = document.getElementById('game-mode').value;
+
+                if (!text) {
+                    showCustomAlert("Por favor, escribe un texto para añadir a la ronda.", "Atención");
+                    return;
+                }
+
+                // Push a lista pendiente global
+                const customQuestion = { text: text, gender: gender === "" ? null : gender, is_custom: true };
+                pendingCustomQuestions.push(customQuestion);
+
+                // Feedback visual dinámico sin cerrar la ventana modal
+                const btn = document.querySelector('button[onclick="submitCustomQuestion()"]');
+                const oldText = btn.textContent;
+                btn.textContent = "¡AÑADIDA!";
+                btn.classList.add('bg-green-600');
+                btn.classList.remove('bg-pink-600');
+                document.getElementById('custom-q-text').value = ''; // Limpiar textarea
+
+                setTimeout(() => {
+                    btn.textContent = oldText;
+                    btn.classList.remove('bg-green-600');
+                    btn.classList.add('bg-pink-600');
+                }, 1000);
+
+                // Disparar a Supabase silenciosamente
+                if (supabaseClient) {
+                    supabaseClient.from('user_submitted_questions').insert({
+                        text, type: 'pregunta', difficulty, gender: gender === "" ? null : gender, category
+                    }).then(({ error }) => { if (error) console.error("No se pudo guardar la pregunta personalizada en BD.", error); });
+                }
+            }
+
+            function skipCustomQuestion() {
+                document.getElementById('custom-question-modal').classList.add('hidden');
+                gameState.activeGame = true;
+                startGame();
+            }
+
             async function startGame() {
                 const playerInputs = document.querySelectorAll('.player-input');
                 const playerNames = Array.from(playerInputs).map((input, index) => {
@@ -1334,8 +1822,19 @@
                     questions = loaded;
                 }
 
-                // Mezclar preguntas para aleatoriedad básica
+                // Mezclar preguntas de base para aleatoriedad
                 questions.sort(() => Math.random() - 0.5);
+
+                // Inserción garantizada y aleatoria de las preguntas custom dentro del pool útil
+                if (pendingCustomQuestions && pendingCustomQuestions.length > 0) {
+                    pendingCustomQuestions.forEach(cq => {
+                        // El índice debe estar entre 0 y el total proyectado de la partida (aprox 20 máximas)
+                        // Así nos aseguramos de que salga SIEMPRE, pero nunca sabemos de antemano el orden
+                        const maxSafeIndex = Math.min(20, questions.length);
+                        const pushIndex = Math.floor(Math.random() * maxSafeIndex);
+                        questions.splice(pushIndex, 0, cq);
+                    });
+                }
 
                 gameState.players = playerNames.map(p => ({ name: p.name, gender: p.gender, score: 0 }));
                 gameState.penaltyName = penalty || "RETO";
@@ -1353,25 +1852,74 @@
 
             // Wrapper to ensure user is logged in before starting and has games available
             async function startButtonClicked() {
-                if (!currentUser) {
-                    showCustomAlert('Debes iniciar sesión antes de empezar la partida.', 'Acceso Denegado');
-                    openAccountModal();
-                    return;
-                }
+                try {
+                    if (!currentUser) {
+                        showCustomAlert('Debes iniciar sesión antes de empezar la partida.', 'Acceso Denegado');
+                        openAccountModal();
+                        return;
+                    }
 
-                if (currentUser.games_available <= 0) {
-                    showCustomAlert('No tienes partidas disponibles. Consigue más para jugar.', 'Sin Partidas');
-                    return;
-                }
+                    if (currentUser.games_available <= 0) {
+                        showCustomAlert('No tienes partidas disponibles. Consigue más para jugar.', 'Sin Partidas');
+                        return;
+                    }
 
-                if (!supabaseClient) {
-                    showCustomAlert("El sistema de conexión no está listo.", "Error Interno");
-                    return;
-                }
+                    if (!supabaseClient) {
+                        showCustomAlert("El sistema de conexión no está listo.", "Error Interno");
+                        return;
+                    }
 
-                // No descontamos aquí, solo marcamos como activa
-                gameState.activeGame = true;
-                startGame();
+                    const playerInputs = document.querySelectorAll('.player-input');
+                    const playerNames = Array.from(playerInputs).map((input, index) => {
+                        const row = input.closest('.player-row');
+                        const selectedGender = row.dataset.gender;
+                        return { name: input.value.trim(), gender: selectedGender };
+                    });
+
+                    const missingGender = playerNames.some(p => !p.gender);
+
+                    if (playerNames.length < 2 || missingGender) {
+                        if (missingGender) {
+                            showCustomAlert("Por favor, selecciona si es hombre (♂) o mujer (♀) para todos los jugadores antes de empezar.", "Falta Selección");
+                        }
+                        document.getElementById('players-list').classList.add('animate-shake');
+                        setTimeout(() => document.getElementById('players-list').classList.remove('animate-shake'), 500);
+                        return;
+                    }
+
+                    const mode = document.getElementById('game-mode').value;
+                    document.getElementById('custom-q-category').textContent = mode.toUpperCase();
+                    document.getElementById('custom-q-text').value = '';
+
+                    // Reset custom difficulty select visually and fundamentally
+                    const diffWrapper = document.getElementById('difficulty-mode-wrapper');
+                    diffWrapper.querySelector('input').value = 'medio';
+                    diffWrapper.querySelector('.custom-select-trigger').textContent = 'Medio';
+                    diffWrapper.querySelectorAll('.custom-option').forEach(opt => {
+                        if (opt.getAttribute('data-value') === 'medio') {
+                            opt.classList.add('text-white', 'select-option-active');
+                            opt.classList.remove('text-gray-400');
+                        } else {
+                            opt.classList.remove('text-white', 'select-option-active');
+                            opt.classList.add('text-gray-400');
+                        }
+                    });
+
+                    pendingCustomQuestions = []; // Vaciamos para nueva partida
+
+                    const bothBtn = document.querySelector('.gender-btn-custom-both');
+                    if (bothBtn) selectCustomGender(bothBtn, '');
+
+                    // Mover al body root list
+                    const modalEl = document.getElementById('custom-question-modal');
+                    if (modalEl.parentNode !== document.body) {
+                        document.body.appendChild(modalEl);
+                    }
+                    modalEl.classList.remove('hidden');
+
+                } catch (e) {
+                    console.error("Debug JS Error:", e);
+                }
             }
             window.startButtonClicked = startButtonClicked;
 
