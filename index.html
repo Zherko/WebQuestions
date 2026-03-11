@@ -322,6 +322,8 @@
                             class="player-input w-full bg-gray-900 border-l-4 border-pink-500 p-2 rounded text-white outline-none font-bold"
                             placeholder="Jugador 1">
                         <div class="flex gap-1">
+                            <button onclick="selectGender(this, '')"
+                                class="gender-btn flex-shrink-0 w-10 h-10 rounded-full bg-gray-800 border-2 border-gray-600 flex items-center justify-center text-xl font-bold transition-all text-gray-500 hover:text-gray-300">⚥</button>
                             <button onclick="selectGender(this, 'M')"
                                 class="gender-btn flex-shrink-0 w-10 h-10 rounded-full bg-gray-800 border-2 border-gray-600 flex items-center justify-center text-xl font-bold transition-all text-gray-500 hover:text-gray-300">♂</button>
                             <button onclick="selectGender(this, 'F')"
@@ -333,6 +335,8 @@
                             class="player-input w-full bg-gray-900 border-l-4 border-pink-500 p-2 rounded text-white outline-none font-bold"
                             placeholder="Jugador 2">
                         <div class="flex gap-1">
+                            <button onclick="selectGender(this, '')"
+                                class="gender-btn flex-shrink-0 w-10 h-10 rounded-full bg-gray-800 border-2 border-gray-600 flex items-center justify-center text-xl font-bold transition-all text-gray-500 hover:text-gray-300">⚥</button>
                             <button onclick="selectGender(this, 'M')"
                                 class="gender-btn flex-shrink-0 w-10 h-10 rounded-full bg-gray-800 border-2 border-gray-600 flex items-center justify-center text-xl font-bold transition-all text-gray-500 hover:text-gray-300">♂</button>
                             <button onclick="selectGender(this, 'F')"
@@ -379,10 +383,7 @@
                 Salir ✕
             </button>
             <div class="flex gap-2">
-                <button id="pwa-install-btn-game" onclick="handleInstallClick()"
-                    class="hidden text-cyan-400 hover:text-white transition-all flex items-center justify-center w-10 h-10 rounded-xl border border-cyan-500/50 bg-black/40 btn-install-pulse">
-                    <span class="text-lg">⬇</span>
-                </button>
+                <!-- removed game-screen install button (was pulsing) -->
                 <button onclick="toggleFullscreen()" id="fullscreen-btn"
                     class="text-gray-400 hover:text-cyan-400 transition-all flex items-center justify-center w-10 h-10 rounded-xl border border-white/10 bg-black/40">
                     <span class="text-lg">⛶</span>
@@ -487,14 +488,19 @@
                                 </svg>
                             </button>
                         </div>
-                        <div class="flex gap-2">
-                            <button onclick="loginAccount()"
-                                class="flex-1 bg-cyan-600 hover:bg-cyan-500 active:scale-95 transition-all py-2 rounded-xl font-black uppercase">Entrar</button>
-                            <button onclick="oauthMock('google')"
-                                class="flex-1 bg-white/5 py-2 rounded-xl font-black">Google</button>
-                            <button onclick="oauthMock('facebook')"
-                                class="flex-1 bg-white/5 py-2 rounded-xl font-black">Facebook</button>
-                        </div>
+                    </div>
+                    <div class="flex justify-between items-center mb-2">
+                        <button onclick="showRecoveryRequest()"
+                            class="text-[10px] text-cyan-400 hover:text-white transition uppercase font-black tracking-widest">¿Olvidaste
+                            tu contraseña?</button>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="loginAccount()"
+                            class="flex-1 bg-cyan-600 hover:bg-cyan-500 active:scale-95 transition-all py-2 rounded-xl font-black uppercase">Entrar</button>
+                        <button onclick="oauthMock('google')"
+                            class="flex-1 bg-white/5 py-2 rounded-xl font-black">Google</button>
+                        <button onclick="oauthMock('facebook')"
+                            class="flex-1 bg-white/5 py-2 rounded-xl font-black">Facebook</button>
                     </div>
                 </div>
 
@@ -534,13 +540,77 @@
                 </div>
             </div>
 
+            <!-- SECCIÓN: SOLICITAR RECUPERACIÓN -->
+            <div id="recovery-request-section" class="hidden">
+                <h3 class="text-2xl font-black mb-6 uppercase">Recuperar Cuenta</h3>
+                <p class="text-xs text-gray-400 mb-6 font-bold uppercase tracking-widest">Introduce tu email y te
+                    enviaremos un enlace para cambiar tu contraseña.</p>
+                <div class="space-y-4 mb-6">
+                    <input id="recovery-email" type="email" placeholder="Tu correo electrónico"
+                        class="w-full bg-gray-900 border border-white/5 p-3 rounded-xl text-white outline-none focus:border-cyan-500 transition-all text-sm" />
+                    <div class="flex gap-3">
+                        <button onclick="requestPasswordReset()"
+                            class="flex-1 bg-cyan-600 hover:bg-cyan-500 py-3 rounded-xl font-black uppercase transition-all">Enviar
+                            Enlace</button>
+                        <button onclick="showLoginSection()"
+                            class="flex-1 bg-gray-800 hover:bg-gray-700 py-3 rounded-xl font-black uppercase transition-all">Volver</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECCIÓN: CAMBIAR CONTRASEÑA (RESET) -->
+            <div id="reset-password-section" class="hidden">
+                <h3 class="text-2xl font-black mb-6 uppercase text-pink-500">Nueva Contraseña</h3>
+                <p class="text-xs text-gray-400 mb-6 font-bold uppercase tracking-widest">Introduce y repite tu nueva
+                    contraseña
+                    para volver a jugar.</p>
+                <div class="space-y-4 mb-6">
+                    <div class="relative">
+                        <label
+                            class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Contraseña
+                            Nueva</label>
+                        <input id="new-password" type="password" placeholder="Mínimo 6 caracteres"
+                            class="w-full bg-gray-900 border border-white/5 p-3 rounded-xl text-white outline-none focus:border-pink-500 transition-all text-sm" />
+                        <button type="button" onclick="togglePassword('new-password', this)"
+                            class="absolute right-3 top-[34px] text-gray-500 hover:text-white transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="relative">
+                        <label
+                            class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Repetir
+                            Contraseña</label>
+                        <input id="new-password-confirm" type="password" placeholder="Repite la contraseña"
+                            class="w-full bg-gray-900 border border-white/5 p-3 rounded-xl text-white outline-none focus:border-pink-500 transition-all text-sm" />
+                        <button type="button" onclick="togglePassword('new-password-confirm', this)"
+                            class="absolute right-3 top-[34px] text-gray-500 hover:text-white transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                        </button>
+                    </div>
+                    <button onclick="updatePassword()"
+                        class="w-full bg-pink-600 hover:bg-pink-500 py-4 rounded-xl font-black uppercase shadow-[0_4px_0_rgb(157,23,77)] active:translate-y-[2px] active:shadow-none transition-all mt-2">Actualizar
+                        Contraseña</button>
+                </div>
+            </div>
+
             <!-- CONTENEDOR AUTENTICADO (Perfil, Tienda, Compartir) -->
             <div id="profile-section" class="hidden">
                 <div class="flex justify-between items-start mb-6">
                     <div>
                         <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Conectado como</p>
                         <p id="profile-name-display"
-                            class="text-2xl font-black text-cyan-400 uppercase tracking-tighter">Cargando...</p>
+                            class="text-2xl font-black text-cyan-400 uppercase tracking-tighter">
+                            Cargando...</p>
                     </div>
                     <button onclick="closeAccountModal()"
                         class="text-gray-400 hover:text-white transition-all w-8 h-8 flex items-center justify-center bg-white/5 rounded-full hover:bg-red-500">✕</button>
@@ -684,6 +754,10 @@
             class="hidden fixed inset-0 bg-black/95 backdrop-blur-xl flex items-center justify-center p-4"
             style="z-index: 99999 !important;">
             <div class="glass-panel p-6 sm:p-8 rounded-[2rem] max-w-md w-full max-h-[90vh] overflow-y-auto">
+                <div class="flex justify-end">
+                    <button onclick="closeCustomQuestionModal()"
+                        class="text-gray-400 hover:text-white transition-all w-8 h-8 flex items-center justify-center bg-white/5 rounded-full hover:bg-red-500">✕</button>
+                </div>
                 <h3
                     class="text-2xl font-black mb-2 text-pink-500 uppercase tracking-widest italic text-center text-[18px]">
                     ¿Quieres añadir preguntas o reto a esta ronda?</h3>
@@ -723,7 +797,7 @@
                         <div class="flex gap-2 justify-center" id="custom-q-gender-container" data-gender="">
                             <button type="button" onclick="selectCustomGender(this, '')"
                                 class="gender-btn-custom gender-btn-custom-both flex-1 py-3 rounded-xl bg-gray-800 border-2 border-gray-600 font-black text-gray-500 hover:text-gray-300 transition-all text-sm shadow-[0_0_10px_rgba(255,255,255,0.2)] text-white scale-105">Ambos
-                                ♂♀</button>
+                                ⚥</button>
                             <button type="button" onclick="selectCustomGender(this, 'M')"
                                 class="gender-btn-custom flex-1 py-3 rounded-xl bg-gray-800 border-2 border-gray-600 font-black text-gray-500 hover:text-gray-300 transition-all text-sm">Chicos
                                 ♂</button>
@@ -1013,6 +1087,12 @@
                     } else if (event === 'SIGNED_OUT') {
                         console.log("User signed out.");
                         setTimeout(() => clearLocalSession(), 0);
+                    } else if (event === 'PASSWORD_RECOVERY') {
+                        console.log("Password recovery event triggered.");
+                        setTimeout(() => {
+                            document.getElementById('account-modal').classList.remove('hidden');
+                            showResetPasswordSection();
+                        }, 500);
                     }
                 });
             }
@@ -1162,6 +1242,95 @@
                 closeAccountModal();
             }
             window.registerAccount = registerAccount;
+
+            async function requestPasswordReset() {
+                const email = document.getElementById('recovery-email').value.trim();
+                if (!email) {
+                    showCustomAlert("Por favor, introduce tu email.", "Falta Email");
+                    return;
+                }
+
+                if (!supabaseClient) {
+                    showCustomAlert("El sistema no está listo.", "Error");
+                    return;
+                }
+
+                // Definimos la URL de redirección para que vuelva a la app
+                const siteUrl = window.location.origin + window.location.pathname;
+
+                const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+                    redirectTo: siteUrl,
+                });
+
+                if (error) {
+                    showCustomAlert("Error: " + error.message, "Fallo");
+                } else {
+                    showCustomAlert("¡Enviado! Revisa tu bandeja de entrada para el enlace de recuperación.", "Correo Enviado");
+                    showLoginSection();
+                }
+            }
+            window.requestPasswordReset = requestPasswordReset;
+
+            async function updatePassword() {
+                const newPass = document.getElementById('new-password').value.trim();
+                const confirmPass = document.getElementById('new-password-confirm').value.trim();
+
+                if (!newPass) {
+                    showCustomAlert("Por favor, introduce una nueva contraseña.", "Campos Vacíos");
+                    return;
+                }
+
+                if (newPass.length < 6) {
+                    showCustomAlert("La contraseña debe tener al menos 6 caracteres.", "Demasiado Corta");
+                    return;
+                }
+
+                if (newPass !== confirmPass) {
+                    showCustomAlert("Las contraseñas no coinciden. Por favor, revísalas.", "Error de Validación");
+                    return;
+                }
+
+                if (!supabaseClient) return;
+
+                const { error } = await supabaseClient.auth.updateUser({
+                    password: newPass
+                });
+
+                if (error) {
+                    showCustomAlert("No se pudo actualizar la contraseña: " + error.message, "Error");
+                } else {
+                    showCustomAlert("¡Contraseña actualizada con éxito! Ya puedes iniciar sesión.", "Éxito");
+
+                    // Limpiar campos
+                    document.getElementById('new-password').value = '';
+                    document.getElementById('new-password-confirm').value = '';
+
+                    showLoginSection();
+                    closeAccountModal();
+                }
+            }
+            window.updatePassword = updatePassword;
+
+            function showRecoveryRequest() {
+                document.getElementById('auth-section').classList.add('hidden');
+                document.getElementById('recovery-request-section').classList.remove('hidden');
+                document.getElementById('reset-password-section').classList.add('hidden');
+            }
+            window.showRecoveryRequest = showRecoveryRequest;
+
+            function showLoginSection() {
+                document.getElementById('auth-section').classList.remove('hidden');
+                document.getElementById('recovery-request-section').classList.add('hidden');
+                document.getElementById('reset-password-section').classList.add('hidden');
+            }
+            window.showLoginSection = showLoginSection;
+
+            function showResetPasswordSection() {
+                document.getElementById('auth-section').classList.add('hidden');
+                document.getElementById('recovery-request-section').classList.add('hidden');
+                document.getElementById('reset-password-section').classList.remove('hidden');
+            }
+            window.showResetPasswordSection = showResetPasswordSection;
 
             // Custom Select Logic
             function toggleCustomSelect(wrapperId) {
@@ -1579,6 +1748,27 @@
             }
             window.loginAccount = loginAccount;
 
+            // Permitir pulsar Enter en los campos de login para enviar el formulario
+            (function bindLoginEnter() {
+                try {
+                    const emailEl = document.getElementById('login-email');
+                    const passEl = document.getElementById('login-password');
+                    const handler = (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            // Evitar doble envío si ya está procesando
+                            const btn = document.querySelector('button[onclick="loginAccount()"]');
+                            if (btn && btn.disabled) return;
+                            loginAccount();
+                        }
+                    };
+                    if (emailEl) emailEl.addEventListener('keydown', handler);
+                    if (passEl) passEl.addEventListener('keydown', handler);
+                } catch (err) {
+                    console.warn('No se pudo enlazar Enter para login:', err);
+                }
+            })();
+
             function togglePassword(inputId, btn) {
                 const input = document.getElementById(inputId);
                 const svg = btn.querySelector('svg');
@@ -1663,6 +1853,7 @@
                 div.innerHTML = `
                 <input type="text" class="player-input w-full bg-gray-900 border-l-4 border-pink-500 p-2 rounded text-white outline-none font-bold" placeholder="Jugador ${rowCount + 1}">
                 <div class="flex gap-1">
+                    <button onclick="selectGender(this, '')" class="gender-btn flex-shrink-0 w-10 h-10 rounded-full bg-gray-800 border-2 border-gray-600 flex items-center justify-center text-xl font-bold transition-all text-gray-500 hover:text-gray-300">⚥</button>
                     <button onclick="selectGender(this, 'M')" class="gender-btn flex-shrink-0 w-10 h-10 rounded-full bg-gray-800 border-2 border-gray-600 flex items-center justify-center text-xl font-bold transition-all text-gray-500 hover:text-gray-300">♂</button>
                     <button onclick="selectGender(this, 'F')" class="gender-btn flex-shrink-0 w-10 h-10 rounded-full bg-gray-800 border-2 border-gray-600 flex items-center justify-center text-xl font-bold transition-all text-gray-500 hover:text-gray-300">♀</button>
                 </div>
@@ -1675,18 +1866,24 @@
 
             function selectGender(btn, gender) {
                 const row = btn.closest('.player-row');
-                row.dataset.gender = gender;
+                // Usar 'B' como marca interna para "both" cuando se pasa cadena vacía
+                const assigned = (gender === '') ? 'B' : gender;
+                row.dataset.gender = assigned;
+                const btns = Array.from(row.querySelectorAll('.gender-btn'));
+                // Reset all buttons to neutral
+                btns.forEach(b => b.className = "gender-btn flex-shrink-0 w-10 h-10 rounded-full bg-gray-800 border-2 border-gray-600 flex items-center justify-center text-xl font-bold transition-all text-gray-500 hover:text-gray-300");
 
-                const btns = row.querySelectorAll('.gender-btn');
-                // Reset both styles
-                btns[0].className = "gender-btn flex-shrink-0 w-10 h-10 rounded-full bg-gray-800 border-2 border-gray-600 flex items-center justify-center text-xl font-bold transition-all text-gray-500 hover:text-gray-300";
-                btns[1].className = "gender-btn flex-shrink-0 w-10 h-10 rounded-full bg-gray-800 border-2 border-gray-600 flex items-center justify-center text-xl font-bold transition-all text-gray-500 hover:text-gray-300";
-
-                // Apply selected styling
-                if (gender === 'M') {
-                    btns[0].className = "gender-btn flex-shrink-0 w-10 h-10 rounded-full bg-cyan-600 border-2 border-cyan-400 flex items-center justify-center text-xl font-bold shadow-[0_0_10px_rgba(8,145,178,0.5)] transition-all text-white scale-110";
+                // Find and style the matching button by symbol or by index
+                if (assigned === 'M') {
+                    const male = btns.find(b => b.textContent.includes('♂')) || btns[1];
+                    if (male) male.className = "gender-btn flex-shrink-0 w-10 h-10 rounded-full bg-cyan-600 border-2 border-cyan-400 flex items-center justify-center text-xl font-bold shadow-[0_0_10px_rgba(8,145,178,0.5)] transition-all text-white scale-110";
+                } else if (assigned === 'F') {
+                    const female = btns.find(b => b.textContent.includes('♀')) || btns[btns.length - 1];
+                    if (female) female.className = "gender-btn flex-shrink-0 w-10 h-10 rounded-full bg-pink-600 border-2 border-pink-400 flex items-center justify-center text-xl font-bold shadow-[0_0_10px_rgba(236,72,153,0.5)] transition-all text-white scale-110";
                 } else {
-                    btns[1].className = "gender-btn flex-shrink-0 w-10 h-10 rounded-full bg-pink-600 border-2 border-pink-400 flex items-center justify-center text-xl font-bold shadow-[0_0_10px_rgba(236,72,153,0.5)] transition-all text-white scale-110";
+                    // Ambos (acepta tanto la secuencia antigua '♂♀' como el glifo combinado '⚥')
+                    const both = btns.find(b => b.textContent.includes('⚥') || (b.textContent.includes('♂') && b.textContent.includes('♀'))) || btns[0];
+                    if (both) both.className = "gender-btn flex-shrink-0 w-10 h-10 rounded-full bg-yellow-600 border-2 border-yellow-400 flex items-center justify-center text-xl font-bold shadow-[0_0_10px_rgba(202,138,4,0.5)] transition-all text-white scale-110";
                 }
             }
             window.selectGender = selectGender;
@@ -1728,7 +1925,8 @@
 
             function selectCustomGender(btn, gender) {
                 const container = document.getElementById('custom-q-gender-container');
-                container.dataset.gender = gender;
+                // Mapear cadena vacía a 'B' internamente para "both" (compatibilidad con nuevo glifo)
+                container.dataset.gender = (gender === '') ? 'B' : gender;
                 const btns = container.querySelectorAll('.gender-btn-custom');
                 btns.forEach(b => {
                     b.className = "gender-btn-custom flex-1 py-3 rounded-xl bg-gray-800 border-2 border-gray-600 font-black text-gray-500 hover:text-gray-300 transition-all text-sm";
@@ -1755,7 +1953,8 @@
                 }
 
                 // Push a lista pendiente global
-                const customQuestion = { text: text, gender: gender === "" ? null : gender, is_custom: true };
+                // Si el género es 'B' (both) lo guardamos como null para que la pregunta aplique a todos
+                const customQuestion = { text: text, gender: (gender === "" || gender === "B") ? null : gender, is_custom: true };
                 pendingCustomQuestions.push(customQuestion);
 
                 // Feedback visual dinámico sin cerrar la ventana modal
@@ -1797,6 +1996,13 @@
                 });
 
                 const penalty = document.getElementById('penalty-name').value.trim();
+                // Validación defensiva: exigir castigo antes de arrancar la partida
+                if (!penalty) {
+                    showCustomAlert('Por favor, indica el castigo para la partida.', 'Falta Castigo');
+                    document.getElementById('players-list').classList.add('animate-shake');
+                    setTimeout(() => document.getElementById('players-list').classList.remove('animate-shake'), 500);
+                    return;
+                }
                 const mode = document.getElementById('game-mode').value;
 
                 const missingGender = playerNames.some(p => !p.gender);
@@ -1888,6 +2094,18 @@
                     }
 
                     const mode = document.getElementById('game-mode').value;
+                    // Validación: el campo de castigo debe rellenarse antes de continuar
+                    const penaltyField = document.getElementById('penalty-name');
+                    const penaltyVal = penaltyField ? penaltyField.value.trim() : '';
+                    if (!penaltyVal) {
+                        showCustomAlert('Por favor, indica el castigo para la partida.', 'Falta Castigo');
+                        const playersListEl = document.getElementById('players-list');
+                        if (playersListEl) {
+                            playersListEl.classList.add('animate-shake');
+                            setTimeout(() => playersListEl.classList.remove('animate-shake'), 500);
+                        }
+                        return;
+                    }
                     document.getElementById('custom-q-category').textContent = mode.toUpperCase();
                     document.getElementById('custom-q-text').value = '';
 
@@ -1977,7 +2195,8 @@
                     const q = questions[i];
                     // Lógica de género: si está vacío (null/undefined) es para todos. 
                     // Si tiene valor, debe coincidir con el género del jugador.
-                    if (!q.gender || q.gender === currentPlayer.gender) {
+                    // Si la pregunta no tiene género (null) o el jugador es 'B' (both), o coincide, es válida
+                    if (!q.gender || currentPlayer.gender === 'B' || q.gender === currentPlayer.gender) {
                         questionToDisplay = q.text;
                         gameState.usedQuestionIndices.add(i);
                         break;
@@ -2096,7 +2315,7 @@
 
             // --- PWA Installation Logic ---
             let deferredPrompt;
-            const installBtns = ['pwa-install-btn-setup', 'pwa-install-btn-game'];
+            const installBtns = ['pwa-install-btn-setup'];
 
             window.addEventListener('beforeinstallprompt', (e) => {
                 console.log('PWA: beforeinstallprompt event fired');
@@ -2152,6 +2371,13 @@
                 }
             }
             window.handleInstallClick = handleInstallClick;
+
+            // Cerrar modal de pregunta personalizada
+            function closeCustomQuestionModal() {
+                const modal = document.getElementById('custom-question-modal');
+                if (modal) modal.classList.add('hidden');
+            }
+            window.closeCustomQuestionModal = closeCustomQuestionModal;
 
             // Check on load if we should show the button for iOS
             window.addEventListener('load', () => {
