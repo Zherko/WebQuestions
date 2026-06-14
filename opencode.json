@@ -1,0 +1,13 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "hostinger": {
+      "type": "local",
+      "command": ["C:\\Users\\javie\\AppData\\Roaming\\npm\\hostinger-api-mcp.cmd"],
+      "enabled": true,
+      "env": {
+        "HOSTINGER_API_TOKEN": "pGuBsAIEIcP9HLYQIErYT78lAp35sY71tyQYCCbZb1f3cabd"
+      }
+    }
+  }
+}

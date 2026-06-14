@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Insertar Pregunta DDBB</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #0d0d0d;
+            color: white;
+            font-family: 'Montserrat', sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        .bg-gradient-party {
+            background: radial-gradient(circle at top right, #2d0b2d, #0d0d0d),
+                linear-gradient(135deg, #0d0d0d 0%, #16213e 100%);
+        }
+
+        .glass-panel {
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(12px);
+            border: 2px solid rgba(236, 72, 153, 0.4);
+            box-shadow: 0 0 30px rgba(236, 72, 153, 0.15);
+        }
+
+        .gender-btn-custom {
+            border: 2px solid #4b5563;
+        }
+
+        .gender-btn-custom.selected {
+            background-color: rgba(236, 72, 153, 0.2);
+            border-color: #ec4899;
+            color: white !important;
+            box-shadow: 0 0 15px rgba(236, 72, 153, 0.3);
+            transform: scale(1.05);
+        }
+
+        /* Custom Selects */
+        .custom-select-wrapper {
+            position: relative;
+            user-select: none;
+        }
+
+        .custom-select {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .custom-options {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            z-index: 50;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transform: translateY(-10px);
+            transition: all 0.2s ease;
+        }
+
+        .custom-select-wrapper.open .custom-options {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: all;
+            transform: translateY(0);
+        }
+
+        .custom-select-wrapper.open .custom-select-arrow {
+            transform: rotate(180deg);
+        }
+    </style>
+</head>
+
+<body class="bg-gradient-party flex items-center justify-center p-4">
+
+    <!-- Modal Form -->
+    <div class="glass-panel p-6 sm:p-8 rounded-[2rem] max-w-md w-full max-h-[95vh] overflow-y-auto relative">
+        <h3 class="text-2xl font-black mb-2 text-pink-500 uppercase tracking-widest italic text-center text-[18px]">
+            Insertar Pregunta DDBB
+        </h3>
+        <p class="text-xs font-bold uppercase tracking-widest text-center text-gray-400 mb-6" id="status-msg">
+            Formulario directo a `questions`
+        </p>
+
+        <div class="space-y-4 mb-6 relative">
+
+            <!-- Category Checkboxes -->
+            <div>
+                <label class="block text-[10px] font-black text-cyan-400 mb-2 uppercase tracking-[0.2em]">Categorías
+                    (Puedes marcar varias)</label>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2" id="category-container">
+                    <label
+                        class="flex items-center gap-2 bg-gray-900 border border-white/10 p-2.5 rounded-xl cursor-pointer hover:bg-gray-800 transition-all">
+                        <input type="checkbox" value="amigos"
+                            class="category-checkbox w-4 h-4 text-pink-500 bg-gray-800 border-gray-600 rounded">
+                        <span class="text-xs font-bold text-white uppercase tracking-wider">Amigos</span>
+                    </label>
+                    <label
+                        class="flex items-center gap-2 bg-gray-900 border border-white/10 p-2.5 rounded-xl cursor-pointer hover:bg-gray-800 transition-all">
+                        <input type="checkbox" value="conociendonos"
+                            class="category-checkbox w-4 h-4 text-pink-500 bg-gray-800 border-gray-600 rounded">
+                        <span class="text-xs font-bold text-white uppercase tracking-wider">Conociéndonos</span>
+                    </label>
+                    <label
+                        class="flex items-center gap-2 bg-gray-900 border border-white/10 p-2.5 rounded-xl cursor-pointer hover:bg-gray-800 transition-all">
+                        <input type="checkbox" value="picante"
+                            class="category-checkbox w-4 h-4 text-pink-500 bg-gray-800 border-gray-600 rounded">
+                        <span class="text-xs font-bold text-white uppercase tracking-wider">Picante</span>
+                    </label>
+                    <label
+                        class="flex items-center gap-2 bg-gray-900 border border-white/10 p-2.5 rounded-xl cursor-pointer hover:bg-gray-800 transition-all">
+                        <input type="checkbox" value="pareja"
+                            class="category-checkbox w-4 h-4 text-pink-500 bg-gray-800 border-gray-600 rounded">
+                        <span class="text-xs font-bold text-white uppercase tracking-wider">Pareja</span>
+                    </label>
+                    <label
+                        class="flex items-center gap-2 bg-gray-900 border border-white/10 p-2.5 rounded-xl cursor-pointer hover:bg-gray-800 transition-all">
+                        <input type="checkbox" value="extremo"
+                            class="category-checkbox w-4 h-4 text-pink-500 bg-gray-800 border-gray-600 rounded">
+                        <span class="text-xs font-bold text-white uppercase tracking-wider">Extremo</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Difficulty -->
+            <div>
+                <label
+                    class="block text-[10px] font-black text-cyan-400 mb-2 uppercase tracking-[0.2em]">Dificultad</label>
+                <div class="custom-select-wrapper w-full" id="difficulty-mode-wrapper">
+                    <input type="hidden" id="custom-q-difficulty" value="media">
+                    <div class="custom-select w-full bg-gray-900 border-b-2 border-cyan-500 p-3 rounded-t text-white outline-none cursor-pointer font-bold transition text-sm hover:bg-gray-800"
+                        onclick="toggleCustomSelect('difficulty-mode-wrapper')">
+                        <span class="custom-select-trigger text-sm" id="difficulty-trigger">Media</span>
+                        <div class="custom-select-arrow transition-transform duration-200 text-xs">▼</div>
+                    </div>
+                    <div
+                        class="custom-options bg-gray-900 border border-t-0 border-cyan-500/50 rounded-b shadow-[0_10px_20px_rgba(0,0,0,0.5)] overflow-hidden z-[5000]">
+                        <div class="custom-option p-3 text-gray-400 font-bold hover:bg-cyan-600/30 cursor-pointer transition text-sm"
+                            data-value="facil" onclick="selectCustomOption('difficulty-mode-wrapper', this)">Fácil</div>
+                        <div class="custom-option p-3 text-white font-bold hover:bg-cyan-600/30 cursor-pointer transition text-sm select-option-active"
+                            data-value="media" onclick="selectCustomOption('difficulty-mode-wrapper', this)">Media</div>
+                        <div class="custom-option p-3 text-gray-400 font-bold hover:bg-cyan-600/30 cursor-pointer transition text-sm"
+                            data-value="dificil" onclick="selectCustomOption('difficulty-mode-wrapper', this)">Difícil
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Target Gender -->
+            <div>
+                <label class="block text-[10px] font-black text-cyan-400 mb-2 uppercase tracking-[0.2em]">Dirigido
+                    a</label>
+                <div class="flex gap-2 justify-center" id="custom-q-gender-container" data-gender="">
+                    <button type="button" data-gender="" onclick="selectCustomGender(this, '')" class="gender-btn-custom flex-1 py-3 rounded-xl bg-gray-800 font-black text-gray-500 hover:text-gray-300 transition-all text-sm selected">Ambos ⚥</button>
+                    <button type="button" data-gender="M" onclick="selectCustomGender(this, 'M')" class="gender-btn-custom flex-1 py-3 rounded-xl bg-gray-800 font-black text-gray-500 hover:text-gray-300 transition-all text-sm">Chicos ♂</button>
+                    <button type="button" data-gender="F" onclick="selectCustomGender(this, 'F')" class="gender-btn-custom flex-1 py-3 rounded-xl bg-gray-800 font-black text-gray-500 hover:text-gray-300 transition-all text-sm">Chicas ♀</button>
+                </div>
+            </div>
+
+            <!-- Text -->
+            <div>
+                <label class="block text-[10px] font-black text-white mb-2 uppercase tracking-[0.2em]">¡Escribe tu
+                    texto!</label>
+                <textarea id="custom-q-text" rows="3" placeholder="Ej: ¿Cuál es tu mayor secreto?"
+                    class="w-full bg-black/50 border border-white/20 p-3 rounded-xl text-white outline-none focus:border-pink-500 transition-all text-sm resize-none"></textarea>
+            </div>
+        </div>
+
+        <div class="flex flex-col gap-3">
+            <button onclick="submitDirectToSupabase()"
+                class="w-full bg-pink-600 hover:bg-pink-500 active:scale-95 transition-all py-4 rounded-xl font-black uppercase tracking-widest text-sm shadow-[0_0_15px_rgba(236,72,153,0.4)]">Añadir
+                a Base de Datos</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // --- Supabase Config ---
+        const SUPABASE_URL = 'https://zqjvhemwjdqjxecemnwh.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_4-Se2F_XjCyQ8QdS0HN84w_Wb0ddQ5f';
+        const pageSupabaseClient = window.supabase?.createClient ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+        // --- UI Logic ---
+        function toggleCustomSelect(wrapper) {
+            // wrapper can be an id string or the element itself
+            if (typeof wrapper === 'string') {
+                wrapper = document.getElementById(wrapper);
+            }
+            if (!wrapper) return;
+            document.querySelectorAll('.custom-select-wrapper.open').forEach(el => {
+                if (el !== wrapper) el.classList.remove('open');
+            });
+            wrapper.classList.toggle('open');
+            console.debug('toggleCustomSelect:', wrapper.id, wrapper.classList.contains('open'));
+        }
+
+        window.onclick = function (event) {
+            if (!event.target.closest('.custom-select-wrapper')) {
+                document.querySelectorAll('.custom-select-wrapper').forEach(el => el.classList.remove('open'));
+            }
+        };
+
+        function selectCustomOption(wrapper, optionEl) {
+            // wrapper can be id string or element
+            if (typeof wrapper === 'string') {
+                wrapper = document.getElementById(wrapper);
+            }
+            if (!wrapper) return;
+            const input = wrapper.querySelector('input');
+            const trigger = wrapper.querySelector('.custom-select-trigger');
+
+            // update selection
+            wrapper.querySelectorAll('.custom-option').forEach(el => {
+                el.classList.remove('text-white', 'select-option-active');
+                el.classList.add('text-gray-400');
+            });
+
+            optionEl.classList.remove('text-gray-400');
+            optionEl.classList.add('text-white', 'select-option-active');
+
+            input.value = optionEl.getAttribute('data-value');
+            trigger.textContent = optionEl.textContent;
+
+            wrapper.classList.remove('open');
+            console.debug('selectCustomOption:', wrapper.id, input.value);
+        }
+
+        function selectCustomGender(btnElement, genderCode) {
+            const container = document.getElementById('custom-q-gender-container');
+            container.setAttribute('data-gender', genderCode);
+
+            const buttons = container.querySelectorAll('.gender-btn-custom');
+            buttons.forEach(btn => {
+                btn.classList.remove('selected');
+                btn.classList.remove('text-white');
+                btn.classList.add('text-gray-500');
+            });
+
+            btnElement.classList.add('selected');
+            btnElement.classList.remove('text-gray-500');
+            btnElement.classList.add('text-white');
+        }
+
+            // Cerrar selects al hacer click fuera (comportamiento igual que en index.html)
+            document.addEventListener('click', function (e) {
+                if (!e.target.closest('.custom-select-wrapper')) {
+                    document.querySelectorAll('.custom-select-wrapper').forEach(w => w.classList.remove('open'));
+                }
+            });
+
+            // Restaurar onclick inline para opciones y botones de género
+            // (los elementos ya tienen atributos onclick en el HTML)
+
+        async function submitDirectToSupabase() {
+            // Recoger categorías marcadas
+            const checkboxes = document.querySelectorAll('.category-checkbox:checked');
+            const categories = Array.from(checkboxes).map(cb => cb.value);
+
+            const difficulty = document.getElementById('custom-q-difficulty').value;
+            let gender = document.getElementById('custom-q-gender-container').getAttribute('data-gender');
+            if (gender === "") gender = null;
+
+            const textEl = document.getElementById('custom-q-text');
+            const text = textEl.value.trim();
+            const statusMsg = document.getElementById('status-msg');
+
+            if (!text) {
+                statusMsg.textContent = "Error: El texto no puede estar vacío";
+                statusMsg.className = "text-xs font-bold uppercase tracking-widest text-center text-red-400 mb-6";
+                return;
+            }
+
+            if (categories.length === 0) {
+                statusMsg.textContent = "Error: Debes marcar al menos una categoría";
+                statusMsg.className = "text-xs font-bold uppercase tracking-widest text-center text-red-400 mb-6";
+                return;
+            }
+
+            statusMsg.textContent = "Guardando...";
+            statusMsg.className = "text-xs font-bold uppercase tracking-widest text-center text-yellow-400 mb-6";
+
+            try {
+                // Crear un array de objetos (uno por cada categoría seleccionada)
+                const rowsToInsert = categories.map(cat => ({
+                    text: text,
+                    category: cat,
+                    difficulty: difficulty,
+                    gender: gender
+                }));
+
+                // Primero intentamos insertar vía backend seguro (usa SERVICE_ROLE_KEY)
+                let inserted = false;
+                try {
+                    const resp = await fetch('/api/questions', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(rowsToInsert)
+                    });
+                    if (resp.ok) {
+                        inserted = true;
+                    } else {
+                        console.warn('Backend responded', resp.status);
+                    }
+                } catch (e) {
+                    console.warn('Backend unreachable, falling back to direct insert', e);
+                }
+
+                if (!inserted) {
+                    // Fallback: inserción desde cliente (requiere RLS que lo permita)
+                    const { data, error } = await pageSupabaseClient.from('questions').insert(rowsToInsert);
+                    if (error) throw error;
+                }
+
+                statusMsg.textContent = "¡Pregunta guardada correctamente!";
+                statusMsg.className = "text-xs font-bold uppercase tracking-widest text-center text-green-400 mb-6";
+                textEl.value = ""; // Clean specific field
+
+                // Return back to default status message after 3 seconds
+                setTimeout(() => {
+                    statusMsg.textContent = "Formulario directo a `questions`";
+                    statusMsg.className = "text-xs font-bold uppercase tracking-widest text-center text-gray-400 mb-6";
+                }, 3000);
+
+            } catch (e) {
+                console.error(e);
+                statusMsg.textContent = "Error interno: " + e.message;
+                statusMsg.className = "text-xs font-bold uppercase tracking-widest text-center text-red-500 mb-6";
+            }
+        }
+    </script>
+</body>
+
+</html>

@@ -42,20 +42,46 @@
             font-family: 'Montserrat', sans-serif;
         }
 
-        /* Parpadeo leve: entre 100% y 90% de brillo */
+        /* Efecto Neón Retro 90s: Glow constante con parpadeos sutiles */
         .title-flicker {
-            animation: lightPulse 1.2s ease-in-out infinite alternate;
+            text-shadow: 0 0 4px #fff,
+                         0 0 11px #fff,
+                         0 0 20px var(--neon-pink),
+                         0 0 40px var(--neon-pink),
+                         0 0 80px var(--neon-pink);
+            animation: neonFlicker 3s linear infinite;
         }
 
-        @keyframes lightPulse {
-            from {
-                filter: brightness(1);
+        @keyframes neonFlicker {
+            0%, 19.9%, 22.1%, 23%, 24.9%, 25.1%, 54.9%, 56.1%, 100% {
+                text-shadow: 0 0 4px #fff, 0 0 11px #fff, 0 0 20px var(--neon-pink), 0 0 40px var(--neon-pink), 0 0 80px var(--neon-pink);
+                opacity: 1;
             }
-
-            to {
-                filter: brightness(0.9);
+            20%, 22%, 24%, 25%, 55% {
+                text-shadow: none;
+                opacity: 0.5;
             }
         }
+
+        /* Letras "rotas" que fallan de forma individual */
+        .flicker-slow {
+            animation: letterFlickerSlow 8s linear infinite;
+        }
+
+        .flicker-fast {
+            animation: letterFlickerFast 3s linear infinite;
+        }
+
+        @keyframes letterFlickerSlow {
+            0%, 40%, 44%, 48%, 52%, 100% { opacity: 1; color: inherit; text-shadow: inherit; }
+            42%, 46%, 50% { opacity: 0.2; color: #333; text-shadow: none; }
+        }
+
+        @keyframes letterFlickerFast {
+            0%, 30%, 34%, 38%, 100% { opacity: 1; color: inherit; text-shadow: inherit; }
+            32%, 36% { opacity: 0.1; color: #222; text-shadow: none; }
+        }
+
 
         .bg-gradient-party {
             background: radial-gradient(circle at top right, #2d0b2d, #0d0d0d),
@@ -90,11 +116,24 @@
             transform: scale(0.92);
         }
 
+        @keyframes ambientGlow {
+            0%, 100% {
+                box-shadow: 0 0 0px rgba(236, 72, 153, 0);
+                border-color: rgba(236, 72, 153, 0.2);
+            }
+            50% {
+                box-shadow: 0 0 60px rgba(236, 72, 153, 0.4), 
+                            0 0 120px rgba(236, 72, 153, 0.1);
+                border-color: rgba(236, 72, 153, 0.6);
+            }
+        }
+
         .glass-panel {
             background: rgba(0, 0, 0, 0.6);
             backdrop-filter: blur(12px);
             border: 2px solid rgba(236, 72, 153, 0.4);
             box-shadow: 0 0 30px rgba(236, 72, 153, 0.15);
+            animation: ambientGlow 30s ease-in-out infinite;
         }
 
         .animate-shake {
@@ -243,7 +282,7 @@
     <div id="setup-screen" class="w-full max-w-md p-6 sm:p-8 rounded-3xl glass-panel">
         <h1
             class="text-4xl sm:text-5xl text-center font-logo title-flicker text-pink-500 mb-8 tracking-widest uppercase italic transform -rotate-2">
-            PARTY ROULETTE</h1>
+            PART<span class="flicker-fast">Y</span> RO<span class="flicker-fast">U</span>LETTE</h1>
 
         <!-- CONSUE DE DEPURACIÓN EN PANTALLA PARA DETECTAR ERRORES -->
         <div id="on-screen-debug"
@@ -320,7 +359,7 @@
                     <div class="player-row flex items-center gap-2" data-gender="">
                         <input type="text"
                             class="player-input w-full bg-gray-900 border-l-4 border-pink-500 p-2 rounded text-white outline-none font-bold"
-                            placeholder="Jugador 1">
+                            placeholder="Jugador 1" autocomplete="off" spellcheck="false">
                         <div class="flex gap-1">
                             <button onclick="selectGender(this, '')"
                                 class="gender-btn flex-shrink-0 w-10 h-10 rounded-full bg-gray-800 border-2 border-gray-600 flex items-center justify-center text-xl font-bold transition-all text-gray-500 hover:text-gray-300">⚥</button>
@@ -333,7 +372,7 @@
                     <div class="player-row flex items-center gap-2" data-gender="">
                         <input type="text"
                             class="player-input w-full bg-gray-900 border-l-4 border-pink-500 p-2 rounded text-white outline-none font-bold"
-                            placeholder="Jugador 2">
+                            placeholder="Jugador 2" autocomplete="off" spellcheck="false">
                         <div class="flex gap-1">
                             <button onclick="selectGender(this, '')"
                                 class="gender-btn flex-shrink-0 w-10 h-10 rounded-full bg-gray-800 border-2 border-gray-600 flex items-center justify-center text-xl font-bold transition-all text-gray-500 hover:text-gray-300">⚥</button>
@@ -1479,22 +1518,49 @@
                     },
                     createOrder: async function (data, actions) {
                         if (!currentUser) {
-                            showCustomAlert("Inicia sesión para comprar.", "Atención");
+                            showCustomAlert("Inicia sesion para comprar.", "Atencion");
                             return;
                         }
 
-                        // Aquí llamaremos a nuestra Edge Function para crear la orden de forma segura
-                        // Por ahora, simulamos la creación para que veas el flujo
-                        // NOTA: Para producción, esto DEBE pasar por la Edge Function paypal-create-order
-                        return actions.order.create({
-                            purchase_units: [{
-                                amount: {
-                                    value: '2.50', // Pack de 3 partidas por defecto para la prueba
-                                    currency_code: 'EUR'
-                                },
-                                description: 'Pack de 3 Partidas - Party Roulette'
-                            }]
-                        });
+                        try {
+                            const packId = window._selectedPack || "pack3";
+                            const res = await fetch("/api/payments/create-order", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                    packId: packId,
+                                    userId: currentUser?.id,
+                                }),
+                            });
+                            if (!res.ok) throw new Error("Error al crear orden");
+                            const { orderId } = await res.json();
+
+                            return actions.order.create({
+                                purchase_units: [{
+                                    amount: {
+                                        value: "2.50",
+                                        currency_code: "EUR"
+                                    },
+                                    description: "Pack de 3 Partidas - Party Roulette",
+                                    custom_id: JSON.stringify({
+                                        packId: packId,
+                                        userId: currentUser?.id,
+                                        games: 3,
+                                    }),
+                                }]
+                            });
+                        } catch (e) {
+                            console.error("Create order failed, using client-side fallback:", e);
+                            return actions.order.create({
+                                purchase_units: [{
+                                    amount: {
+                                        value: "2.50",
+                                        currency_code: "EUR"
+                                    },
+                                    description: "Pack de 3 Partidas - Party Roulette"
+                                }]
+                            });
+                        }
                     },
                     onApprove: async function (data, actions) {
                         showCustomAlert("Procesando pago... No cierres esta ventana.", "Pago en curso");
@@ -1502,28 +1568,34 @@
                         return actions.order.capture().then(async function (details) {
                             console.log("Pago capturado por PayPal:", details);
 
-                            // Enviar confirmación a nuestra Edge Function para validar y sumar partidas
-                            // NOTA: Para producción, el Webhook de PayPal es el que debe sumar las partidas de forma segura.
-                            // Aquí hacemos una actualización directa para que puedas probar la interfaz.
-
                             const amountPaid = parseFloat(details.purchase_units[0].amount.value);
                             let gamesToAdd = 1;
                             if (amountPaid >= 7.00) gamesToAdd = 10;
                             else if (amountPaid >= 2.50) gamesToAdd = 3;
 
-                            const newTotal = (currentUser.games_available || 0) + gamesToAdd;
+                            await fetch("/api/payments/confirm-payment", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                    orderId: data.orderID,
+                                    amountPaid: amountPaid,
+                                    gamesToAdd: gamesToAdd,
+                                    userId: currentUser?.id,
+                                }),
+                            });
 
+                            const newTotal = (currentUser.games_available || 0) + gamesToAdd;
                             const { error } = await supabaseClient
-                                .from('profiles')
+                                .from("profiles")
                                 .update({ games_available: newTotal })
-                                .eq('id', currentUser.id);
+                                .eq("id", currentUser.id);
 
                             if (error) {
                                 showCustomAlert("Error al actualizar tu saldo. Contacta con soporte.", "Error");
                             } else {
                                 currentUser.games_available = newTotal;
                                 renderLoggedUser();
-                                showCustomAlert(`¡Gracias ${details.payer.name.given_name}! Has recibido +${gamesToAdd} partidas.`, "Compra Completada");
+                                showCustomAlert("Gracias! Has recibido +" + gamesToAdd + " partidas.", "Compra Completada");
                             }
                         });
                     },
@@ -1851,7 +1923,7 @@
                 div.className = 'player-row flex items-center gap-2';
                 div.dataset.gender = "";
                 div.innerHTML = `
-                <input type="text" class="player-input w-full bg-gray-900 border-l-4 border-pink-500 p-2 rounded text-white outline-none font-bold" placeholder="Jugador ${rowCount + 1}">
+                <input type="text" class="player-input w-full bg-gray-900 border-l-4 border-pink-500 p-2 rounded text-white outline-none font-bold" placeholder="Jugador ${rowCount + 1}" autocomplete="off" spellcheck="false">
                 <div class="flex gap-1">
                     <button onclick="selectGender(this, '')" class="gender-btn flex-shrink-0 w-10 h-10 rounded-full bg-gray-800 border-2 border-gray-600 flex items-center justify-center text-xl font-bold transition-all text-gray-500 hover:text-gray-300">⚥</button>
                     <button onclick="selectGender(this, 'M')" class="gender-btn flex-shrink-0 w-10 h-10 rounded-full bg-gray-800 border-2 border-gray-600 flex items-center justify-center text-xl font-bold transition-all text-gray-500 hover:text-gray-300">♂</button>

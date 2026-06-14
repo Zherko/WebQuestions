@@ -19,6 +19,10 @@ __pycache__/
 mcp-supabase/
 mcp-supabases/
 
+# Node
+node_modules/
+*.zip
+
 # OS
 Thumbs.db
 Desktop.ini
