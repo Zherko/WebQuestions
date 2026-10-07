@@ -1885,21 +1885,51 @@
 
             // Removed redundant localStorage functions for currentUser to avoid conflicts with Supabase persistence
 
-            // Real OAuth flow with Supabase
             async function oauthMock(provider) {
-                if (!supabaseClient) {
-                    showCustomAlert("El sistema de conexión no está listo.", "Error");
-                    return;
-                }
-                const { data, error } = await supabaseClient.auth.signInWithOAuth({
-                    provider: provider,
-                    options: {
-                        redirectTo: window.location.origin
+                const btn = document.querySelector(`button[onclick="oauthMock('${provider}')"]`);
+                try {
+                    const ready = await waitForSupabaseReady(2500);
+                    if (!ready || !supabaseClient) {
+                        showCustomAlert("El sistema de conexión no está listo. Recarga la página.", "Error");
+                        return;
                     }
-                });
-
-                if (error) {
-                    showCustomAlert('Error con OAuth: ' + error.message, 'Fallo');
+                    if (btn) { btn.disabled = true; btn.style.opacity = '0.5'; btn.textContent = 'Conectando...'; }
+                    console.log(`[OAuth] iniciando ${provider}...`);
+                    const redirectUrl = window.location.origin + window.location.pathname;
+                    console.log(`[OAuth] redirectTo: ${redirectUrl}`);
+                    const { data, error } = await supabaseClient.auth.signInWithOAuth({
+                        provider: provider,
+                        options: {
+                            redirectTo: redirectUrl,
+                            queryParams: provider === 'google' ? { access_type: 'offline', prompt: 'consent' } : undefined,
+                            scopes: provider === 'google' ? 'email profile' : undefined
+                        }
+                    });
+                    console.log('[OAuth] respuesta', { data, error });
+                    if (error) {
+                        let msg = error.message || 'Error desconocido';
+                        if (msg.toLowerCase().includes('not enabled') || msg.toLowerCase().includes('provider')) {
+                            msg += '\n\nEl proveedor ' + provider + ' no está activo en Supabase Dashboard → Authentication → Providers → ' + provider + '. Actívalo y añade Client ID/Secret de Google Cloud Console.';
+                        }
+                        if (msg.toLowerCase().includes('redirect')) {
+                            msg += '\n\nAñade ' + redirectUrl + ' en Supabase → Authentication → URL Configuration → Redirect URLs.';
+                        }
+                        showCustomAlert('Error con OAuth: ' + msg, 'Fallo OAuth');
+                        if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.textContent = provider === 'google' ? 'Google' : 'Facebook'; }
+                        return;
+                    }
+                    if (data?.url) {
+                        console.log('[OAuth] redirigiendo a', data.url);
+                        window.location.href = data.url;
+                    } else {
+                        console.warn('[OAuth] sin URL de redirección', data);
+                        showCustomAlert('No se recibió URL de redirección. Revisa la configuración del proveedor.', 'Fallo OAuth');
+                        if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.textContent = provider === 'google' ? 'Google' : 'Facebook'; }
+                    }
+                } catch (err) {
+                    console.error('[OAuth] excepción', err);
+                    showCustomAlert('Error inesperado OAuth: ' + (err?.message || err), 'Fallo');
+                    if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.textContent = provider === 'google' ? 'Google' : 'Facebook'; }
                 }
             }
             window.oauthMock = oauthMock;
