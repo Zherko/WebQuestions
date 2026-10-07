@@ -118,12 +118,11 @@
 
         @keyframes ambientGlow {
             0%, 100% {
-                box-shadow: 0 0 0px rgba(236, 72, 153, 0);
-                border-color: rgba(236, 72, 153, 0.2);
+                box-shadow: 0 0 15px rgba(236, 72, 153, 0.15), 0 0 30px rgba(236, 72, 153, 0.05);
+                border-color: rgba(236, 72, 153, 0.25);
             }
             50% {
-                box-shadow: 0 0 60px rgba(236, 72, 153, 0.4), 
-                            0 0 120px rgba(236, 72, 153, 0.1);
+                box-shadow: 0 0 40px rgba(236, 72, 153, 0.45), 0 0 80px rgba(236, 72, 153, 0.15);
                 border-color: rgba(236, 72, 153, 0.6);
             }
         }
@@ -133,7 +132,16 @@
             backdrop-filter: blur(12px);
             border: 2px solid rgba(236, 72, 153, 0.4);
             box-shadow: 0 0 30px rgba(236, 72, 153, 0.15);
-            animation: ambientGlow 30s ease-in-out infinite;
+            animation: ambientGlow 3.8s ease-in-out infinite;
+        }
+
+        @keyframes glowPulse {
+            0%, 100% { opacity: 0.55; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.08); }
+        }
+
+        .glow-blob {
+            animation: glowPulse 3.8s ease-in-out infinite;
         }
 
         .animate-shake {
@@ -658,7 +666,7 @@
                 <!-- Bloque: Partidas y Tienda -->
                 <div
                     class="bg-gradient-to-br from-white/10 to-transparent border border-white/10 p-5 rounded-3xl mb-4 text-center relative overflow-hidden">
-                    <div class="absolute -top-10 -right-10 w-32 h-32 bg-pink-500/20 rounded-full blur-3xl"></div>
+                    <div class="absolute -top-10 -right-10 w-32 h-32 bg-pink-500/20 rounded-full blur-3xl glow-blob"></div>
                     <p class="text-[10px] font-black text-pink-500 uppercase tracking-[0.3em] mb-2">Tu Saldo Actual</p>
                     <div class="flex items-baseline justify-center gap-2 mb-6">
                         <span id="profile-games-display"
@@ -863,6 +871,27 @@
                 </div>
             </div>
         </div>
+
+    <div id="cookie-banner" class="hidden fixed inset-0 z-[9998] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="glass-panel rounded-[1.5rem] max-w-sm w-full p-6 text-center relative overflow-hidden">
+            <div class="absolute -top-10 -right-10 w-32 h-32 bg-pink-500/20 rounded-full blur-3xl glow-blob pointer-events-none"></div>
+            <div class="absolute -bottom-10 -left-10 w-32 h-32 bg-pink-500/10 rounded-full blur-3xl glow-blob pointer-events-none" style="animation-delay: 1.2s"></div>
+            <div class="flex justify-center mb-4">
+                <div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center text-2xl shadow-lg rotate-3">🎲</div>
+            </div>
+            <h3 class="text-lg font-black text-white mb-2 tracking-wide" style="text-shadow: 0 0 10px rgba(236,72,153,0.6)">Tu privacidad, primero</h3>
+            <p class="text-xs font-bold text-gray-400 leading-relaxed mb-6">Usamos cookies para guardar tu elección y, si aceptas, medir con Analytics qué se usa más. Sin aceptar, Party Roulette funciona igual.</p>
+            <div class="flex gap-3 mb-4">
+                <button onclick="acceptCookies()" class="flex-1 bg-pink-600 hover:bg-pink-500 py-3.5 rounded-full font-black text-xs uppercase tracking-widest shadow-[0_0_15px_rgba(236,72,153,0.4)] transition-all">Aceptar y ayudar</button>
+                <button onclick="declineCookies()" class="flex-1 bg-pink-600 hover:bg-pink-500 py-3.5 rounded-full font-black text-xs uppercase tracking-widest shadow-[0_0_15px_rgba(236,72,153,0.4)] transition-all">Rechazar</button>
+            </div>
+            <div class="flex items-center justify-center gap-2 text-xs font-bold">
+                <button onclick="acceptCookies()" class="text-cyan-400 hover:text-cyan-300 underline">Configurar</button>
+                <span class="text-gray-600">·</span>
+                <a href="terms.html" target="_blank" class="text-cyan-400 hover:text-cyan-300 underline">Privacidad</a>
+            </div>
+        </div>
+    </div>
 
         <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
@@ -2457,6 +2486,16 @@
                     showInstallButtons();
                 }
             });
+
+            function acceptCookies(){ localStorage.setItem('cookie-consent','accepted'); document.getElementById('cookie-banner').classList.add('hidden'); }
+            function declineCookies(){ localStorage.setItem('cookie-consent','declined'); document.getElementById('cookie-banner').classList.add('hidden'); }
+            window.acceptCookies=acceptCookies; window.declineCookies=declineCookies;
+            (function checkCookieConsent(){
+                if(!localStorage.getItem('cookie-consent')){
+                    const b=document.getElementById('cookie-banner');
+                    if(b) setTimeout(()=> b.classList.remove('hidden'), 800);
+                }
+            })();
 
             // --- Lanzamiento Final de la App ---
             console.log("App script loaded. Initializing Supabase...");
