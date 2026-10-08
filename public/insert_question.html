@@ -79,7 +79,22 @@
     </style>
 </head>
 
-<body class="bg-gradient-party flex items-center justify-center p-4">
+<body class="bg-gradient-party flex items-center justify-center p-4"><script>
+(async()=>{
+const allowed=['javierortunorodriguez@gmail.com','kiril.ivanov.petrov@gmail.com'];
+const supa=window.supabase?.createClient?window.supabase.createClient('https://zqjvhemwjdqjxecemnwh.supabase.co','sb_publishable_4-Se2F_XjCyQ8QdS0HN84w_Wb0ddQ5f'):null;
+async function check(){
+ if(!supa) return;
+ const {data:{session}}=await supa.auth.getSession();
+ const email=session?.user?.email?.toLowerCase();
+ if(!email||!allowed.includes(email)){
+  document.body.innerHTML='<div class="bg-gradient-party min-h-screen flex items-center justify-center p-4"><div class="glass-panel p-8 rounded-2xl max-w-md w-full text-center"><h3 class="text-xl font-black text-pink-500 mb-3">Acceso restringido</h3><p class="text-sm text-gray-400 mb-6">Debes iniciar sesion con javierortunorodriguez@gmail.com o kiril.ivanov.petrov@gmail.com</p><button onclick="location.href=\'index.html\'" class="w-full bg-cyan-600 py-3 rounded-xl font-black uppercase">Ir a inicio</button></div></div>';
+ }
+}
+if(supa) supa.auth.onAuthStateChange(()=>check());
+await check();
+})();
+</script>
 
     <!-- Modal Form -->
     <div class="glass-panel p-6 sm:p-8 rounded-[2rem] max-w-md w-full max-h-[95vh] overflow-y-auto relative">
