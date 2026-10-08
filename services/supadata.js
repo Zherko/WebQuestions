@@ -1,0 +1,2 @@
+// supadata service
+module.exports = {};
