@@ -88,7 +88,7 @@ async function check(){
  const {data:{session}}=await supa.auth.getSession();
  const email=session?.user?.email?.toLowerCase();
  if(!email||!allowed.includes(email)){
-  const lp=document.getElementById('login-prompt'); if(lp) lp.style.display='block';
+  const lp=document.getElementById('login-prompt'); if(lp) lp.style.display='block'; const tb=document.getElementById('top-login-btn'); if(tb) tb.style.display='block';
 
   const m=document.getElementById('account-modal'); if(m) m.classList.remove('hidden'); const lp=document.getElementById('login-prompt'); if(lp) lp.style.display='block'; document.querySelectorAll('div.glass-panel').forEach(el=>{ if(el.id!=='login-prompt' && !el.closest('#account-modal')) el.style.display='none'; }); return;
 
@@ -102,6 +102,7 @@ await check();
 
     <!-- Modal Form -->
     <div id="login-prompt" class="glass-panel p-6 rounded-2xl max-w-md w-full text-center mb-4" style="display:none"><h3 class="text-lg font-black text-cyan-400 mb-3">Inicia sesion para continuar</h3><p class="text-xs text-gray-400 mb-4">Solo javier o kiril</p><button onclick="document.getElementById('account-modal').classList.remove('hidden')" class="w-full bg-cyan-600 py-3 rounded-xl font-black uppercase">Iniciar sesion</button></div>
+    <div id="top-login-btn" class="glass-panel p-4 rounded-2xl max-w-md w-full text-center mb-4" style="display:none"><button onclick="document.getElementById('account-modal').classList.remove('hidden')" class="w-full bg-cyan-600 py-3 rounded-xl font-black uppercase">Iniciar sesion para volcar</button></div>
     <div class="glass-panel p-6 sm:p-8 rounded-[2rem] max-w-md w-full max-h-[95vh] overflow-y-auto relative">
         <h3 class="text-2xl font-black mb-2 text-pink-500 uppercase tracking-widest italic text-center text-[18px]">
             Insertar Pregunta DDBB
