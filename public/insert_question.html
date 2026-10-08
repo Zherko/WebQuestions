@@ -313,11 +313,7 @@
                     console.warn('Backend unreachable, falling back to direct insert', e);
                 }
 
-                if (!inserted) {
-                    // Fallback: inserción desde cliente (requiere RLS que lo permita)
-                    const { data, error } = await pageSupabaseClient.from('questions').insert(rowsToInsert);
-                    if (error) throw error;
-                }
+                if (!inserted) throw new Error('Supadata backend failed');
 
                 statusMsg.textContent = "¡Pregunta guardada correctamente!";
                 statusMsg.className = "text-xs font-bold uppercase tracking-widest text-center text-green-400 mb-6";
