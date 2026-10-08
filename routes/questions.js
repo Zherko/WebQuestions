@@ -13,6 +13,14 @@ router.get('/:category', async (req, res) => {
 });
 router.post('/', async (req, res) => {
   try {
+    const allowed = ['javierortunorodriguez@gmail.com','kiril.ivanov.petrov@gmail.com'];
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.replace('Bearer ','');
+    if(!token) return res.status(401).json({error:'No token'});
+    const { createClient } = require('@supabase/supabase-js');
+    const supa = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+    const { data:{user}, error } = await supa.auth.getUser(token);
+    if(error || !user || !allowed.includes(user.email?.toLowerCase())) return res.status(403).json({error:'No autorizado'});
     const rows = req.body;
     if (!Array.isArray(rows) || rows.length === 0) return res.status(400).json({ error: 'Body must be non-empty array' });
     const data = await insertQuestions(rows);
